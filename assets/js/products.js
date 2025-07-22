@@ -352,12 +352,7 @@ function debounce(func, wait) {
     };
 }
 
-// Make addToCart available globally (will be implemented in cart.js)
-window.addToCart = function(productId) {
-    console.log(`🛒 Adding product ${productId} to cart`);
-    // This will be implemented when we create cart.js
-    showNotification('Cart functionality will be implemented in cart.js', 'info');
-};
+
 
 // ============================================================================
 // DEBUG FUNCTIONS
