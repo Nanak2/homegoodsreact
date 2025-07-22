@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GHHomegoods - Your Trusted Source for Quality Products</title>
+    
+    <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Loading Overlay -->
+        <div id="loadingOverlay" class="loading-overlay hidden">
+            <div class="loading-spinner"></div>
+            <div id="loadingMessage">Loading...</div>
+        </div>
+
+        <!-- Connection Status Indicator -->
+        <div id="connectionStatus" class="connection-status">
+            🔗 Connected to Server
+        </div>
+
+        <!-- Admin Status Notice -->
+        <div id="adminNotice" class="admin-notice">
+            ✓ Authenticated as Admin
+        </div>
+
+        <!-- Admin Login Modal -->
+        <div id="modalBackdrop" class="modal-backdrop"></div>
+        <div id="adminModal" class="modal">
+            <h2>🔐 Admin Login</h2>
+            <input type="password" id="adminPassword" placeholder="Enter admin password" autocomplete="current-password">
+            <div class="modal-buttons">
+                <button class="button-secondary" onclick="closeAdminModal()">Cancel</button>
+                <button class="button" onclick="adminLogin()">Login</button>
+            </div>
+            <p style="font-size: 0.8rem; color: #6b7280; text-align: center; margin-top: 1rem; margin-bottom: 0;">
+                Tip: Press Ctrl+Shift+A to open this login
+            </p>
+        </div>
+
+        <!-- Cart Modal -->
+        <div id="cartModal" class="cart-modal">
+            <div class="cart-header">
+                <h2>🛒 Shopping Cart</h2>
+                <button class="close-cart" onclick="closeCart()">&times;</button>
+            </div>
+            <div class="cart-content" id="cartContent">
+                <!-- Cart items will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Checkout Modal -->
+        <div id="checkoutModal" class="checkout-modal">
+            <div class="checkout-content">
+                <div class="checkout-header">
+                    <h2>📋 Checkout</h2>
+                    <button class="close-cart" onclick="closeCheckout()">&times;</button>
+                </div>
+                <div class="checkout-body" id="checkoutBody">
+                    <!-- Checkout content will be loaded here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Order Tracking Modal -->
+        <div id="trackingModal" class="tracking-modal">
+            <div class="tracking-content">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2>📦 Track Your Order</h2>
+                    <button class="close-cart" onclick="closeTracking()">&times;</button>
+                </div>
+                
+                <div class="tracking-form">
+                    <div class="form-group">
+                        <label class="form-label">Order ID</label>
+                        <input type="text" class="form-input" id="trackingOrderId" placeholder="Enter your order ID (e.g., GH1001)">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Phone Number</label>
+                        <input type="tel" class="form-input" id="trackingPhone" placeholder="Enter your phone number">
+                    </div>
+                    <button class="button" onclick="trackOrder()" style="width: 100%;">
+                        Track Order
+                    </button>
+                </div>
+                
+                <div id="trackingResult" class="tracking-result hidden">
+                    <!-- Tracking results will appear here -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo" onclick="showHome()">
+                    <div class="logo-custom">gh</div>
+                    <span class="logo-text">GHHomegoods</span>
+                </div>
+                
+                <nav class="nav">
+                    <ul class="nav-list">
+                        <li><button class="nav-button active" id="homeBtn" onclick="showHome()">Home</button></li>
+                        <li><button class="nav-button" id="shopBtn" onclick="showShop()">Shop</button></li>
+                        <li><button class="nav-button hidden" id="adminBtn" onclick="showAdmin()">Admin (<span id="adminOrderCount">0</span>)</button></li>
+                        <li><button class="nav-button hidden" id="logoutBtn" onclick="adminLogout()" style="background-color: rgba(220, 38, 38, 0.2); border: 1px solid rgba(220, 38, 38, 0.5);">Logout</button></li>
+                    </ul>
+                    
+                    <button class="cart-button" onclick="showCart()">
+                        Cart
+                        <span class="cart-badge hidden" id="cartBadge">0</span>
+                    </button>
+                </nav>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Home Page -->
+            <div id="homePage">
+                <div class="hero">
+                    <h1>Welcome to GHHomegoods</h1>
+                    <p>Your trusted source for baby care, household essentials, food & beverages, and personal care products. Quality brands at wholesale prices delivered to your door.</p>
+                    <button class="button" onclick="showShop()">Shop Now</button>
+                </div>
+                
+                <h2 class="section-title">Shop by Category</h2>
+                <div class="category-grid">
+                    <div class="category-card" onclick="showShop('baby-care')">
+                        <span class="category-icon">👶</span>
+                        <h3>Baby Care</h3>
+                        <p>Browse our baby care products</p>
+                    </div>
+                    <div class="category-card" onclick="showShop('food-beverages')">
+                        <span class="category-icon">🍎</span>
+                        <h3>Food & Beverages</h3>
+                        <p>Browse our food & beverages products</p>
+                    </div>
+                    <div class="category-card" onclick="showShop('cleaning-household')">
+                        <span class="category-icon">🧽</span>
+                        <h3>Cleaning & Household</h3>
+                        <p>Browse our cleaning & household products</p>
+                    </div>
+                    <div class="category-card" onclick="showShop('personal-care')">
+                        <span class="category-icon">🧴</span>
+                        <h3>Personal Care</h3>
+                        <p>Browse our personal care products</p>
+                    </div>
+                    <div class="category-card" onclick="showShop('storage-organization')">
+                        <span class="category-icon">📦</span>
+                        <h3>Storage & Organization</h3>
+                        <p>Browse our storage & organization products</p>
+                    </div>
+                </div>
+                
+                <h2 class="section-title">Featured Products</h2>
+                <div class="product-grid" id="featuredProducts">
+                    <!-- Featured products will be loaded here -->
+                </div>
+                
+                <!-- Connection Testing Section -->
+                <div style="text-align: center; margin: 3rem 0; padding: 2rem; background: white; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <h3 style="color: #374151; margin-bottom: 1rem;">🔧 System Testing</h3>
+                    <div style="display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;">
+                        <button class="button-secondary" onclick="testConnection()">
+                            🔧 Test Connection
+                        </button>
+                        <button class="button-secondary" onclick="testProxyHealth()">
+                            🏥 Test Proxy Health
+                        </button>
+                        <button class="button-secondary" onclick="showTracking()">
+                            📦 Track My Order
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Customer Actions -->
+                <div style="text-align: center; margin: 2rem 0;">
+                    <button class="button-secondary" onclick="clearAllData()" style="background: #dc2626; color: white; border-color: #dc2626;">
+                        🧹 Clear All Data
+                    </button>
+                </div>
+            </div>
+
+            <!-- Shop Page -->
+            <div id="shopPage" class="hidden">
+                <h2 class="section-title">All Products</h2>
+                
+                <!-- Search Section -->
+                <div class="search-section">
+                    <div class="search-container">
+                        <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search products... (Press Ctrl+K to focus)">
+                        <div class="search-filters">
+                            <button class="filter-btn active" onclick="filterByCategory('all')">All</button>
+                            <button class="filter-btn" onclick="filterByCategory('baby-care')">Baby Care</button>
+                            <button class="filter-btn" onclick="filterByCategory('food-beverages')">Food & Beverages</button>
+                            <button class="filter-btn" onclick="filterByCategory('cleaning')">Cleaning</button>
+                            <button class="filter-btn" onclick="filterByCategory('personal-care')">Personal Care</button>
+                        </div>
+                    </div>
+                    <div class="search-results" id="searchResults"></div>
+                </div>
+                
+                <div class="product-grid" id="allProducts">
+                    <!-- All products will be loaded here -->
+                </div>
+            </div>
+
+            <!-- Admin Page -->
+            <div id="adminPage" class="hidden">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
+                    <h2 class="section-title" style="margin-bottom: 0;">Admin Dashboard</h2>
+                </div>
+                
+                <!-- Admin Statistics -->
+                <div class="admin-stats" id="adminStats">
+                    <!-- Stats will be loaded here -->
+                </div>
+                
+                <div style="background-color: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 2rem;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3 style="color: #000; margin: 0;">📦 Product Management (<span id="productCount">0</span> products)</h3>
+                        <button class="button-secondary" id="refreshBtn" onclick="loadProductsFromGoogleSheets()">
+                            <span class="loading-spinner hidden" id="refreshSpinner"></span>
+                            <span id="refreshText">Refresh Products</span>
+                        </button>
+                    </div>
+                    <div style="background-color: #fed7aa; padding: 1rem; border-radius: 0.5rem;">
+                        <p style="margin: 0; font-size: 0.9rem; color: #000;">
+                            📊 Products are automatically loaded from your Google Sheets. Use the refresh button to sync latest changes.
+                        </p>
+                    </div>
+                </div>
+                
+                <div class="orders-container">
+                    <div class="orders-header">
+                        <h3 style="color: #000; margin: 0;">📋 Order Management (<span id="orderCount">0</span> orders)</h3>
+                        <div style="display: flex; gap: 1rem;">
+                            <button class="button-secondary" onclick="refreshOrders()">
+                                <span class="loading-spinner hidden" id="ordersSpinner"></span>
+                                <span id="ordersText">Refresh Orders</span>
+                            </button>
+                            <button class="button-secondary" onclick="clearAllLocalData()">Clear Local Data</button>
+                        </div>
+                    </div>
+                    <div id="ordersContainer">
+                        <!-- Orders will be loaded here -->
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div style="max-width: 1200px; margin: 0 auto;">
+                <h3>GHHomegoods</h3>
+                <p style="color: #9ca3af; margin-bottom: 2rem;">
+                    Your trusted source for quality household essentials, baby care & personal care products
+                </p>
+                <div style="margin-bottom: 2rem;">
+                    <p style="color: #9ca3af;">
+                        📞 +233 59 961 3762 | 📧 ghhomegoods@gmail.com
+                    </p>
+                    <p style="color: #9ca3af; font-size: 0.875rem; margin-top: 0.5rem;">
+                        🚚 Free delivery in Greater Accra for orders over GH₵200
+                    </p>
+                </div>
+                <div class="payment-info">
+                    <p>💰 We accept MTN Mobile Money, Vodafone Cash & AirtelTigo Money</p>
+                </div>
+                <p style="color: #9ca3af; font-size: 0.875rem;">
+                    © 2025 GHHomegoods. All rights reserved. | Business Registration: Coming Soon
+                </p>
+                <button class="admin-access" id="adminAccessBtn" onclick="showAdminModal()">Admin Access</button>
+            </div>
+        </footer>
+    </div>
+
+    
+    <script type="module" src="assets/js/main.js"></script>
+</body>
+</html>
