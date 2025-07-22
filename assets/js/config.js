@@ -7,7 +7,7 @@
 export const API_CONFIG = {
     PROXY_URL: 'https://ghhomegoods.com/api/proxy.php',
     PROXY_HEALTH_URL: 'https://ghhomegoods.com/api/proxy.php?health=1',
-    GOOGLE_SHEETS_CSV_URL: 'https://docs.google.com/spreadsheets/d/1BxiMVs0XRA5nFMdKvBdBZjgmUUqptlbs74OgvE2upms/export?format=csv&gid=0',
+    GOOGLE_SHEETS_CSV_URL: 'https://docs.google.com/spreadsheets/d/14yjMXMc3AliGRemAPHU0GKPEBhW9h6Dzu6zv3kPC_fg/export?format=csv&gid=0',
     GOOGLE_APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbxejTUnbE2sDmJxmdtwb-p-Uj6c973U9Y3YNR0TuWQ9Uml2429Sq7_NLhbksA2VnyM6/exec'
 };
 
@@ -62,12 +62,12 @@ export const UI_CONFIG = {
 
 export const PRODUCT_CATEGORIES = [
     { id: 'all', name: 'All Products' },
-    { id: 'electronics', name: 'Electronics' },
-    { id: 'home-garden', name: 'Home & Garden' },
-    { id: 'fashion', name: 'Fashion' },
-    { id: 'health-beauty', name: 'Health & Beauty' },
-    { id: 'sports-outdoors', name: 'Sports & Outdoors' },
-    { id: 'books-media', name: 'Books & Media' }
+    { id: 'baby-care', name: 'Baby Care' },
+    { id: 'food-beverages', name: 'Food & Beverages' },
+    { id: 'cleaning-household', name: 'Cleaning & Household' },
+    { id: 'personal-care', name: 'Personal Care' },
+    { id: 'storage-organization', name: 'Storage & Organization' },
+    { id: 'back-to-school', name: 'Back to School' }
 ];
 
 // ============================================================================

@@ -82,7 +82,14 @@ export function bindGlobalFunctions() {
 // APPLICATION INITIALIZATION
 // ============================================================================
 
+let isInitialized = false;
+
 export function initializeApp() {
+    if (isInitialized) {
+        console.log('⚠️ App already initialized, skipping...');
+        return;
+    }
+    
     console.log('🚀 Initializing GHHomegoods E-commerce Application...');
     
     // Initialize shared state
@@ -101,6 +108,7 @@ export function initializeApp() {
     // Load initial data
     loadInitialData();
     
+    isInitialized = true;
     console.log('✅ GHHomegoods application fully initialized');
 }
 
@@ -140,6 +148,13 @@ function setupEventListeners() {
             if (searchInput && !shopPage?.classList.contains('hidden')) {
                 searchInput.focus();
             }
+        }
+        
+        // Ctrl + Shift + A to open admin login
+        if (e.ctrlKey && e.shiftKey && e.key === 'A') {
+            e.preventDefault();
+            console.log('🔐 Admin shortcut triggered');
+            window.showAdminModal?.();
         }
     });
     
@@ -231,10 +246,12 @@ document.addEventListener('DOMContentLoaded', () => {
     initializeApp();
 });
 
-// Also run immediately if DOM is already loaded
-if (document.readyState === 'loading') {
-    // DOM is still loading, event listener will handle it
-} else {
-    // DOM is already loaded
-    initializeApp();
+// Fallback for cases where DOM is already loaded
+if (document.readyState !== 'loading') {
+    // Use a small delay to prevent double execution
+    setTimeout(() => {
+        if (!isInitialized) {
+            initializeApp();
+        }
+    }, 10);
 }

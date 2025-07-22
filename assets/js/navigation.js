@@ -205,9 +205,12 @@ function updateActiveNavigation(activePage) {
 }
 
 function initializeSearch() {
-    // This will be implemented when we fix products.js
-    // For now, just log that search should be initialized
-    console.log('🔍 Search should be initialized here');
+    // Import and call search initialization
+    import('./products.js').then(products => {
+        products.initializeSearch();
+    }).catch(error => {
+        console.warn('⚠️ Could not initialize search:', error);
+    });
 }
 
 function updateFilterButtons(category) {
@@ -221,31 +224,59 @@ function updateFilterButtons(category) {
 }
 
 function updateProductDisplay() {
-    // This will be implemented when we fix products.js
-    console.log('📦 Products should be updated here');
+    // Import and call products display update
+    import('./products.js').then(products => {
+        products.updateProductDisplay();
+    }).catch(error => {
+        console.warn('⚠️ Could not update product display:', error);
+    });
 }
 
 function updateCartContent() {
-    // This will be implemented when we fix cart.js
-    console.log('🛒 Cart content should be updated here');
+    // Import and call cart content update
+    import('./cart.js').then(cart => {
+        cart.updateCartContent();
+    }).catch(error => {
+        console.warn('⚠️ Could not update cart content:', error);
+    });
 }
 
 function updateCartUI() {
-    // This will be implemented when we fix cart.js
-    console.log('🛒 Cart UI should be updated here');
+    // Import and call cart UI update
+    import('./cart.js').then(cart => {
+        cart.updateCartUI();
+    }).catch(error => {
+        console.warn('⚠️ Could not update cart UI:', error);
+    });
 }
 
 function updateOrderDisplay() {
-    // This will be implemented when we fix orders.js
-    console.log('📋 Orders display should be updated here');
+    // Import and call orders display update
+    import('./orders.js').then(orders => {
+        // Update order count if element exists
+        const orderCount = document.getElementById('orderCount');
+        if (orderCount) {
+            orderCount.textContent = orders.orders?.length || 0;
+        }
+    }).catch(error => {
+        console.warn('⚠️ Could not update order display:', error);
+    });
 }
 
 function updateAdminStatsDisplay() {
-    // This will be implemented when we fix admin.js
-    console.log('📊 Admin stats should be updated here');
+    // Import and call admin stats update
+    import('./admin.js').then(admin => {
+        admin.loadAdminStats();
+    }).catch(error => {
+        console.warn('⚠️ Could not update admin stats:', error);
+    });
 }
 
 function loadAdminData() {
-    // This will be implemented when we fix admin.js
-    console.log('👑 Admin data should be loaded here');
+    // Import and call admin data loading
+    import('./admin.js').then(admin => {
+        admin.loadAdminData();
+    }).catch(error => {
+        console.warn('⚠️ Could not load admin data:', error);
+    });
 }

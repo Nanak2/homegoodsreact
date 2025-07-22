@@ -59,9 +59,35 @@ export async function loadProducts() {
 }
 
 export async function refreshProducts() {
-    showNotification('Refreshing products...', 'info');
-    await loadProducts();
-    showNotification('Products refreshed successfully', 'success');
+    console.log('🔄 Manually refreshing products...');
+    showNotification('Refreshing products from Google Sheets...', 'info');
+    setLoadingState(true);
+    
+    try {
+        // Force reload from Google Sheets
+        const csvData = await fetchProductsFromGoogleSheets();
+        if (csvData && csvData.length > 0) {
+            const parsedProducts = parseCSVProducts(csvData);
+            if (parsedProducts.length > 0) {
+                setProducts(parsedProducts);
+                updateProductDisplay();
+                showNotification(`✅ Refreshed! Loaded ${parsedProducts.length} products from Google Sheets`, 'success');
+                console.log(`✅ Manual refresh successful: ${parsedProducts.length} products loaded`);
+                return true;
+            }
+        }
+        
+        // If Google Sheets fails, keep current products but show warning
+        showNotification('Failed to refresh from Google Sheets, keeping current products', 'warning');
+        return false;
+        
+    } catch (error) {
+        console.error('💥 Manual refresh failed:', error);
+        showNotification('Refresh failed. Check your internet connection.', 'error');
+        return false;
+    } finally {
+        setLoadingState(false);
+    }
 }
 
 // ============================================================================
@@ -178,7 +204,7 @@ export function updateProductDisplay() {
     }
     
     // Filter products
-    const filteredProducts = filterProducts(products, currentFilter, searchQuery);
+    const filteredProducts = filterProductList(products, currentFilter, searchQuery);
     
     // Update search results text
     updateSearchResults(filteredProducts.length);
@@ -196,7 +222,7 @@ export function updateProductDisplay() {
     }
 }
 
-function filterProducts(productList, filter, search) {
+function filterProductList(productList, filter, search) {
     let filtered = [...productList];
     
     // Apply category filter
@@ -331,6 +357,62 @@ window.addToCart = function(productId) {
     console.log(`🛒 Adding product ${productId} to cart`);
     // This will be implemented when we create cart.js
     showNotification('Cart functionality will be implemented in cart.js', 'info');
+};
+
+// ============================================================================
+// DEBUG FUNCTIONS
+// ============================================================================
+
+/**
+ * Debug Google Sheets loading - call from console
+ */
+window.debugGoogleSheets = async function() {
+    console.log('🔧 DEBUG: Testing Google Sheets connection...');
+    
+    try {
+        console.log('📋 Google Sheets URL:', API_CONFIG.GOOGLE_SHEETS_CSV_URL);
+        
+        const csvData = await fetchProductsFromGoogleSheets();
+        if (csvData) {
+            console.log('✅ CSV Data Length:', csvData.length);
+            console.log('📄 First 200 characters:', csvData.substring(0, 200));
+            
+            const parsedProducts = parseCSVProducts(csvData);
+            console.log('📦 Parsed Products:', parsedProducts.length);
+            
+            if (parsedProducts.length > 0) {
+                console.log('🔍 Sample Product:', parsedProducts[0]);
+                return { success: true, products: parsedProducts };
+            } else {
+                console.warn('⚠️ No products parsed from CSV');
+                return { success: false, error: 'No products parsed' };
+            }
+        } else {
+            console.error('❌ No CSV data received');
+            return { success: false, error: 'No CSV data' };
+        }
+    } catch (error) {
+        console.error('💥 Debug failed:', error);
+        return { success: false, error: error.message };
+    }
+};
+
+/**
+ * Force load products from Google Sheets - call from console
+ */
+window.forceLoadFromSheets = async function() {
+    console.log('🚀 FORCE LOADING from Google Sheets...');
+    showNotification('Force loading from Google Sheets...', 'info');
+    
+    const result = await window.debugGoogleSheets();
+    if (result.success) {
+        setProducts(result.products);
+        updateProductDisplay();
+        showNotification(`✅ Force loaded ${result.products.length} products!`, 'success');
+    } else {
+        showNotification(`❌ Force load failed: ${result.error}`, 'error');
+    }
+    return result;
 };
 
 // ============================================================================
