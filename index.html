@@ -21,13 +21,13 @@
         </div>
 
         <!-- Admin Status Notice -->
-        <div id="adminNotice" class="admin-notice">
+        <div id="adminNotice" class="admin-notice" style="display: none;">
             ✓ Authenticated as Admin
         </div>
 
         <!-- Admin Login Modal -->
-        <div id="modalBackdrop" class="modal-backdrop"></div>
-        <div id="adminModal" class="modal">
+        <div id="modalBackdrop" class="modal-backdrop" style="display: none;"></div>
+        <div id="adminModal" class="modal" style="display: none;">
             <h2>🔐 Admin Login</h2>
             <input type="password" id="adminPassword" placeholder="Enter admin password" autocomplete="current-password">
             <div class="modal-buttons">
@@ -46,47 +46,159 @@
                 <button class="close-cart" onclick="closeCart()">&times;</button>
             </div>
             <div class="cart-content" id="cartContent">
-                <!-- Cart items will be loaded here -->
+                <div id="emptyCart" class="empty-cart hidden">
+                    <div style="text-align: center; padding: 2rem; color: #6b7280;">
+                        <div style="font-size: 3rem; margin-bottom: 1rem;">🛒</div>
+                        <h3>Your cart is empty</h3>
+                        <p>Add some products to get started!</p>
+                        <button class="button" onclick="closeCart(); showShop();">Continue Shopping</button>
+                    </div>
+                </div>
+                <div id="cartItems"></div>
+                <div class="cart-footer">
+                    <div class="cart-total">
+                        <strong>Total: <span id="cartTotal">GH₵0.00</span></strong>
+                    </div>
+                    <button id="checkoutBtn" class="button" onclick="proceedToCheckout()" disabled>
+                        Proceed to Checkout
+                    </button>
+                </div>
             </div>
         </div>
 
         <!-- Checkout Modal -->
-        <div id="checkoutModal" class="checkout-modal">
+        <div id="checkoutModal" class="checkout-modal" style="display: none;">
             <div class="checkout-content">
                 <div class="checkout-header">
                     <h2>📋 Checkout</h2>
                     <button class="close-cart" onclick="closeCheckout()">&times;</button>
                 </div>
                 <div class="checkout-body" id="checkoutBody">
-                    <!-- Checkout content will be loaded here -->
+                    <form id="checkoutForm" onsubmit="event.preventDefault(); placeOrder();">
+                        <!-- Error container -->
+                        <div id="checkoutErrors" class="hidden mb-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+                            <!-- Validation errors will appear here -->
+                        </div>
+                        
+                        <!-- Customer Information -->
+                        <div class="form-section">
+                            <h3>Customer Information</h3>
+                            <div class="form-group">
+                                <label class="form-label" for="customerName">Full Name *</label>
+                                <input type="text" id="customerName" name="customerName" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="customerPhone">Phone Number *</label>
+                                <input type="tel" id="customerPhone" name="customerPhone" class="form-input" required>
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label" for="customerEmail">Email (Optional)</label>
+                                <input type="email" id="customerEmail" name="customerEmail" class="form-input">
+                            </div>
+                        </div>
+
+                        <!-- Fulfillment Method -->
+                        <div class="form-section">
+                            <h3>Fulfillment Method</h3>
+                            <div class="fulfillment-options">
+                                <label class="fulfillment-option">
+                                    <input type="radio" name="fulfillmentMethod" value="pickup" checked>
+                                    <div class="option-content">
+                                        <strong>Store Pickup - FREE</strong>
+                                        <p>Pick up from our store (Same day)</p>
+                                    </div>
+                                </label>
+                                <label class="fulfillment-option">
+                                    <input type="radio" name="fulfillmentMethod" value="delivery">
+                                    <div class="option-content">
+                                        <strong>Home Delivery - GH₵10</strong>
+                                        <p>Delivery to your address (1-2 business days)</p>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <!-- Delivery Address (shown only for delivery) -->
+                        <div id="deliveryAddressSection" class="form-section hidden">
+                            <h3>Delivery Address</h3>
+                            <div class="form-group">
+                                <label class="form-label" for="deliveryAddress">Full Address *</label>
+                                <textarea id="deliveryAddress" name="deliveryAddress" class="form-input" rows="3" placeholder="Enter your complete delivery address"></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Special Instructions -->
+                        <div class="form-section">
+                            <h3>Special Instructions (Optional)</h3>
+                            <div class="form-group">
+                                <textarea id="specialInstructions" name="specialInstructions" class="form-input" rows="2" placeholder="Any special delivery instructions..."></textarea>
+                            </div>
+                        </div>
+
+                        <!-- Order Summary -->
+                        <div class="form-section">
+                            <h3>Order Summary</h3>
+                            <div class="order-summary">
+                                <div id="orderItems">
+                                    <!-- Order items will be populated here -->
+                                </div>
+                                <div class="order-totals">
+                                    <div class="total-line">
+                                        <span>Subtotal:</span>
+                                        <span id="orderSubtotal">GH₵0.00</span>
+                                    </div>
+                                    <div class="total-line">
+                                        <span>Delivery:</span>
+                                        <span id="orderDelivery">GH₵0.00</span>
+                                    </div>
+                                    <div class="total-line total-final">
+                                        <span><strong>Total:</strong></span>
+                                        <span id="orderTotal"><strong>GH₵0.00</strong></span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <div class="form-section">
+                            <button type="submit" id="submitOrder" class="button" style="width: 100%;">
+                                <span id="orderLoadingSpinner" class="loading-spinner hidden"></span>
+                                Place Order
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
 
         <!-- Order Tracking Modal -->
-        <div id="trackingModal" class="tracking-modal">
+        <div id="trackingModal" class="tracking-modal" style="display: none;">
             <div class="tracking-content">
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                     <h2>📦 Track Your Order</h2>
                     <button class="close-cart" onclick="closeTracking()">&times;</button>
                 </div>
                 
-                <div class="tracking-form">
-                    <div class="form-group">
-                        <label class="form-label">Order ID</label>
-                        <input type="text" class="form-input" id="trackingOrderId" placeholder="Enter your order ID (e.g., GH1001)">
+                <form id="trackingForm" onsubmit="event.preventDefault(); trackOrder();">
+                    <div class="tracking-form">
+                        <div class="form-group">
+                            <label class="form-label" for="trackingId">Order ID</label>
+                            <input type="text" class="form-input" id="trackingId" name="trackingId" placeholder="Enter your order ID (e.g., GH1001)" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label" for="trackingPhone">Phone Number</label>
+                            <input type="tel" class="form-input" id="trackingPhone" name="trackingPhone" placeholder="Enter your phone number" required>
+                        </div>
+                        <button type="submit" class="button" style="width: 100%;">
+                            Track Order
+                        </button>
                     </div>
-                    <div class="form-group">
-                        <label class="form-label">Phone Number</label>
-                        <input type="tel" class="form-input" id="trackingPhone" placeholder="Enter your phone number">
-                    </div>
-                    <button class="button" onclick="trackOrder()" style="width: 100%;">
-                        Track Order
-                    </button>
-                </div>
+                </form>
                 
                 <div id="trackingResult" class="tracking-result hidden">
-                    <!-- Tracking results will appear here -->
+                    <div id="orderDetails">
+                        <!-- Tracking results will appear here -->
+                    </div>
                 </div>
             </div>
         </div>
@@ -109,7 +221,9 @@
                     
                     <button class="cart-button" onclick="showCart()">
                         Cart
-                        <span class="cart-badge hidden" id="cartBadge">0</span>
+                        <span class="cart-badge hidden" id="cartBadge">
+                            <span id="cartCount">0</span>
+                        </span>
                     </button>
                 </nav>
             </div>
@@ -192,17 +306,18 @@
                     <div class="search-container">
                         <input type="text" class="search-input" id="searchInput" placeholder="🔍 Search products... (Press Ctrl+K to focus)">
                         <div class="search-filters">
-                            <button class="filter-btn active" onclick="filterByCategory('all')">All</button>
-                            <button class="filter-btn" onclick="filterByCategory('baby-care')">Baby Care</button>
-                            <button class="filter-btn" onclick="filterByCategory('food-beverages')">Food & Beverages</button>
-                            <button class="filter-btn" onclick="filterByCategory('cleaning')">Cleaning</button>
-                            <button class="filter-btn" onclick="filterByCategory('personal-care')">Personal Care</button>
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="baby-care">Baby Care</button>
+                            <button class="filter-btn" data-filter="food-beverages">Food & Beverages</button>
+                            <button class="filter-btn" data-filter="cleaning-household">Cleaning</button>
+                            <button class="filter-btn" data-filter="personal-care">Personal Care</button>
+                            <button class="filter-btn" data-filter="storage-organization">Storage</button>
                         </div>
                     </div>
-                    <div class="search-results" id="searchResults"></div>
+                    <div class="search-results" id="searchResults">Showing all products</div>
                 </div>
                 
-                <div class="product-grid" id="allProducts">
+                <div class="product-grid" id="productGrid">
                     <!-- All products will be loaded here -->
                 </div>
             </div>
@@ -215,13 +330,28 @@
                 
                 <!-- Admin Statistics -->
                 <div class="admin-stats" id="adminStats">
-                    <!-- Stats will be loaded here -->
+                    <div class="stat-card">
+                        <h3>Total Orders</h3>
+                        <div class="stat-value" id="totalOrders">0</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Total Revenue</h3>
+                        <div class="stat-value" id="totalRevenue">GH₵0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Average Order</h3>
+                        <div class="stat-value" id="avgOrderValue">GH₵0.00</div>
+                    </div>
+                    <div class="stat-card">
+                        <h3>Pending Orders</h3>
+                        <div class="stat-value" id="pendingOrders">0</div>
+                    </div>
                 </div>
                 
                 <div style="background-color: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); margin-bottom: 2rem;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
                         <h3 style="color: #000; margin: 0;">📦 Product Management (<span id="productCount">0</span> products)</h3>
-                        <button class="button-secondary" id="refreshBtn" onclick="loadProductsFromGoogleSheets()">
+                        <button class="button-secondary" id="refreshBtn" onclick="refreshProducts()">
                             <span class="loading-spinner hidden" id="refreshSpinner"></span>
                             <span id="refreshText">Refresh Products</span>
                         </button>
@@ -237,7 +367,7 @@
                     <div class="orders-header">
                         <h3 style="color: #000; margin: 0;">📋 Order Management (<span id="orderCount">0</span> orders)</h3>
                         <div style="display: flex; gap: 1rem;">
-                            <button class="button-secondary" onclick="refreshOrders()">
+                            <button class="button-secondary" onclick="loadAdminData()">
                                 <span class="loading-spinner hidden" id="ordersSpinner"></span>
                                 <span id="ordersText">Refresh Orders</span>
                             </button>
@@ -277,7 +407,6 @@
         </footer>
     </div>
 
-    
     <script type="module" src="assets/js/main.js"></script>
 </body>
 </html>
