@@ -127,7 +127,7 @@ export async function testGoogleAppsScript() {
     console.log('📊 Testing Google Apps Script connection...');
     
     try {
-        const result = await callViaProxy('test_connection', {}, {
+        const result = await callViaProxy('verify_system', {}, {
             timeout: 8000,
             showNotifications: true
         });
@@ -246,8 +246,7 @@ export async function submitOrder(orderData) {
     
     try {
         const result = await callViaProxy('place_order', {
-            order: orderData,
-            source: 'web_frontend'
+            order: orderData
         }, {
             timeout: 15000,
             retries: 2
@@ -272,9 +271,9 @@ export async function trackOrderById(orderId, phone) {
     console.log(`🔍 Tracking order ${orderId} for phone ${phone}...`);
     
     try {
-        const result = await callViaProxy('track_order', {
+        const result = await callViaProxy('lookup_customer_order', {
             orderId,
-            phone,
+            phoneNumber: phone,
             includeHistory: true
         }, {
             timeout: 10000,
@@ -322,9 +321,11 @@ export async function fetchAllOrders(adminToken = null) {
     setOrdersLoadingState(true);
     
     try {
-        const result = await callViaProxy('get_all_orders', {
+        const result = await callViaProxy('get_orders', {
             adminToken,
-            includeStats: true
+            limit: 100,
+            status: 'all',
+            sortBy: 'date'
         }, {
             timeout: 15000,
             retries: 1
@@ -375,9 +376,7 @@ export async function fetchAdminStats(adminToken = null) {
     
     try {
         const result = await callViaProxy('get_admin_stats', {
-            adminToken,
-            includeCharts: true,
-            dateRange: '30d'
+            adminToken
         }, {
             timeout: 12000,
             retries: 1
@@ -597,8 +596,76 @@ export async function debugApiConnectivity() {
     return results;
 }
 
-// Make debug function available globally
+/**
+ * Debug backend storage - call from console
+ */
+export async function debugBackendStorage() {
+    console.log('🔧 DEBUG: Testing backend storage integration...');
+    
+    const tests = [
+        {
+            name: 'PHP Proxy Health',
+            test: () => testProxyHealth()
+        },
+        {
+            name: 'Google Apps Script Connection',
+            test: () => callViaProxy('verify_system', {})
+        },
+        {
+            name: 'Order Retrieval',
+            test: () => callViaProxy('get_orders', { adminToken: 'test', limit: 10 })
+        },
+        {
+            name: 'Order Tracking Test',
+            test: () => callViaProxy('lookup_customer_order', { orderId: 'GH1001', phoneNumber: '020111111' })
+        }
+    ];
+    
+    const results = {};
+    
+    for (const test of tests) {
+        try {
+            console.log(`🧪 Testing: ${test.name}...`);
+            const result = await test.test();
+            results[test.name] = { 
+                success: true, 
+                data: result,
+                working: result.success !== false
+            };
+            console.log(`${result.success !== false ? '✅' : '❌'} ${test.name}: ${result.success !== false ? 'Working' : 'Failed'}`);
+        } catch (error) {
+            results[test.name] = { 
+                success: false, 
+                error: error.message,
+                working: false
+            };
+            console.error(`❌ ${test.name}: Failed - ${error.message}`);
+        }
+    }
+    
+    console.log('\n📊 BACKEND INTEGRATION SUMMARY:');
+    Object.entries(results).forEach(([name, result]) => {
+        console.log(`${result.working ? '✅' : '❌'} ${name}`);
+    });
+    
+    const workingCount = Object.values(results).filter(r => r.working).length;
+    console.log(`\n📈 Backend Integration: ${workingCount}/${tests.length} endpoints working`);
+    
+    if (workingCount === 0) {
+        console.log('\n🚨 ISSUE: No backend endpoints working - orders only stored locally');
+        console.log('💡 SOLUTION: Set up Google Apps Script and PHP proxy');
+    } else if (workingCount < tests.length) {
+        console.log('\n⚠️ PARTIAL: Some backend endpoints working - check failed ones');
+    } else {
+        console.log('\n🎉 SUCCESS: All backend endpoints working - orders should sync across devices');
+    }
+    
+    return results;
+}
+
+// Make debug functions available globally
 window.debugApiConnectivity = debugApiConnectivity;
+window.debugBackendStorage = debugBackendStorage;
 
 // ============================================================================
 // INITIALIZATION

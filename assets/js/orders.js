@@ -1,4 +1,4 @@
-// orders.js - Complete order management and checkout
+// orders.js - Complete order management and checkout with FIXED API integration
 
 import { 
     cart, 
@@ -22,7 +22,7 @@ import {
 import { callViaProxy, testProxyHealth } from './api.js';
 
 // ============================================================================
-// ORDER PLACEMENT
+// ORDER PLACEMENT - FIXED API INTEGRATION
 // ============================================================================
 
 export async function placeOrder() {
@@ -45,19 +45,22 @@ export async function placeOrder() {
         showOrderProcessingState(true);
         showNotification('Processing your order...', 'info');
         
-        // Create order object
-        const order = createOrderObject(orderData);
+        // Create order object in format expected by Google Apps Script
+        const order = createGoogleSheetsCompatibleOrder(orderData);
         
-        // Attempt to submit via API
+        // Attempt to submit via API - FIXED: Wrap order in object
         let orderSubmitted = false;
         try {
-            const apiResponse = await callViaProxy('place_order', order);
+            console.log('🌐 Submitting order to Google Apps Script API...');
+            const apiResponse = await callViaProxy('place_order', { order }); // FIXED: Wrapped in object
             if (apiResponse.success) {
                 orderSubmitted = true;
                 console.log('✅ Order submitted via API successfully');
+                showNotification('Order synced to server!', 'success');
             }
         } catch (apiError) {
             console.warn('⚠️ API submission failed, falling back to local storage:', apiError);
+            showNotification('⚠️ Order saved locally (limited sync)', 'warning');
         }
         
         // Save order locally regardless of API success
@@ -100,6 +103,8 @@ function validateAndCollectOrderData() {
         customerEmail: formData.get('customerEmail')?.trim(),
         fulfillmentMethod: formData.get('fulfillmentMethod'),
         deliveryAddress: formData.get('deliveryAddress')?.trim(),
+        deliveryCity: formData.get('deliveryCity')?.trim() || 'Accra',
+        pickupTime: formData.get('pickupTime')?.trim(),
         specialInstructions: formData.get('specialInstructions')?.trim()
     };
     
@@ -122,6 +127,10 @@ function validateAndCollectOrderData() {
         errors.push('Delivery address is required for delivery orders');
     }
     
+    if (data.fulfillmentMethod === 'pickup' && !data.pickupTime) {
+        errors.push('Please select a pickup time slot');
+    }
+    
     if (data.customerEmail && !VALIDATION_RULES.PATTERNS.EMAIL.test(data.customerEmail)) {
         errors.push('Please enter a valid email address');
     }
@@ -135,7 +144,8 @@ function validateAndCollectOrderData() {
     return data;
 }
 
-function createOrderObject(orderData) {
+// FIXED: Create order object compatible with Google Apps Script backend
+function createGoogleSheetsCompatibleOrder(orderData) {
     const orderId = `GH${incrementOrderCounter()}`;
     const timestamp = new Date().toISOString();
     
@@ -144,20 +154,26 @@ function createOrderObject(orderData) {
     const deliveryOption = DELIVERY_OPTIONS.find(option => option.id === orderData.fulfillmentMethod);
     const deliveryCost = deliveryOption ? deliveryOption.cost : 0;
     const total = subtotal + deliveryCost;
+    const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
     
+    // Format order exactly as expected by Google Apps Script
     return {
         id: orderId,
         timestamp: timestamp,
-        status: ORDER_STATUSES.PENDING,
         customer: {
             name: orderData.customerName,
             phone: orderData.customerPhone,
-            email: orderData.customerEmail || null
+            email: orderData.customerEmail || 'Not provided'
         },
-        fulfillment: {
-            method: orderData.fulfillmentMethod,
-            address: orderData.deliveryAddress || null,
-            instructions: orderData.specialInstructions || null
+        fulfillmentMethod: orderData.fulfillmentMethod, // Match Google Apps Script field
+        delivery: {
+            address: orderData.deliveryAddress || '',
+            city: orderData.deliveryCity || '',
+            notes: orderData.fulfillmentMethod === 'delivery' ? orderData.specialInstructions || '' : ''
+        },
+        pickup: {
+            time: orderData.pickupTime || '',
+            notes: orderData.fulfillmentMethod === 'pickup' ? orderData.specialInstructions || '' : ''
         },
         items: cart.map(item => ({
             id: item.id,
@@ -166,17 +182,25 @@ function createOrderObject(orderData) {
             quantity: item.quantity,
             subtotal: item.price * item.quantity
         })),
+        total: total,
+        itemCount: itemCount,
+        status: ORDER_STATUSES.PENDING,
+        // Legacy fields for backward compatibility
         pricing: {
             subtotal: subtotal,
             delivery: deliveryCost,
             total: total
         },
-        total: total // Legacy field for backward compatibility
+        fulfillment: {
+            method: orderData.fulfillmentMethod,
+            address: orderData.deliveryAddress || null,
+            instructions: orderData.specialInstructions || null
+        }
     };
 }
 
 // ============================================================================
-// ORDER TRACKING
+// ORDER TRACKING - FIXED API INTEGRATION
 // ============================================================================
 
 export async function trackOrder() {
@@ -196,35 +220,45 @@ export async function trackOrder() {
     showNotification('Searching for your order...', 'info');
     
     try {
-        // First try to find order via API
+        // PRIORITY 1: Try to find order via API (server-side storage)
         let order = null;
         try {
-            const apiResponse = await callViaProxy('track_order', { orderId, phone });
-            if (apiResponse.success && apiResponse.order) {
-                order = apiResponse.order;
-                console.log('✅ Order found via API');
+            console.log('🌐 Checking Google Apps Script for order...');
+            // FIXED: Use correct API action and parameter names
+            const apiResponse = await callViaProxy('lookup_customer_order', { 
+                orderId, 
+                phoneNumber: phone // FIXED: Changed from 'phone' to 'phoneNumber'
+            });
+            
+            // FIXED: Check correct response data path
+            if (apiResponse.success && apiResponse.data && apiResponse.data.order) {
+                order = apiResponse.data.order;
+                console.log('✅ Order found via Google Apps Script API (cross-device)');
+                showNotification('Order found in server! ✅', 'success');
             }
         } catch (apiError) {
-            console.warn('⚠️ API tracking failed, checking local orders:', apiError);
+            console.warn('⚠️ API tracking failed, checking local storage:', apiError);
         }
         
-        // Fallback to local orders
+        // PRIORITY 2: Fallback to local orders (device-specific)
         if (!order) {
+            console.log('💾 Checking local storage for order...');
             order = orders.find(o => 
                 o.id === orderId && 
                 o.customer.phone === phone
             );
             if (order) {
-                console.log('✅ Order found in local storage');
+                console.log('✅ Order found in local storage (device-only)');
+                showNotification('⚠️ Order found locally (may not sync across devices)', 'warning');
             }
         }
         
         if (order) {
             displayOrderTrackingResult(order);
-            showNotification('Order found!', 'success');
         } else {
             showOrderNotFound();
             showNotification('Order not found. Please check your details.', 'error');
+            console.log('❌ Order not found in API or local storage');
         }
         
     } catch (error) {
@@ -240,7 +274,14 @@ function displayOrderTrackingResult(order) {
     if (!trackingResult || !orderDetails) return;
     
     const statusClass = getStatusClass(order.status);
-    const deliveryMethod = DELIVERY_OPTIONS.find(option => option.id === order.fulfillment?.method);
+    const deliveryMethod = DELIVERY_OPTIONS.find(option => option.id === order.fulfillmentMethod);
+    
+    // Handle both new order format and legacy format
+    const orderTimestamp = order.timestamp || order.date;
+    const customerInfo = order.customer || {};
+    const deliveryInfo = order.delivery || {};
+    const pickupInfo = order.pickup || {};
+    const fulfillmentMethod = order.fulfillmentMethod || order.fulfillment?.method;
     
     orderDetails.innerHTML = `
         <div class="bg-white rounded-lg border p-6">
@@ -254,17 +295,20 @@ function displayOrderTrackingResult(order) {
             <div class="grid md:grid-cols-2 gap-6 mb-6">
                 <div>
                     <h4 class="font-semibold mb-2">Customer Information</h4>
-                    <p><strong>Name:</strong> ${order.customer.name}</p>
-                    <p><strong>Phone:</strong> ${order.customer.phone}</p>
-                    ${order.customer.email ? `<p><strong>Email:</strong> ${order.customer.email}</p>` : ''}
-                    <p><strong>Order Date:</strong> ${formatDate(order.timestamp)}</p>
+                    <p><strong>Name:</strong> ${customerInfo.name}</p>
+                    <p><strong>Phone:</strong> ${customerInfo.phone}</p>
+                    ${customerInfo.email && customerInfo.email !== 'Not provided' ? `<p><strong>Email:</strong> ${customerInfo.email}</p>` : ''}
+                    <p><strong>Order Date:</strong> ${formatDate(orderTimestamp)}</p>
                 </div>
                 
                 <div>
                     <h4 class="font-semibold mb-2">Fulfillment</h4>
-                    <p><strong>Method:</strong> ${deliveryMethod ? deliveryMethod.name : order.fulfillment?.method || 'N/A'}</p>
-                    ${order.fulfillment?.address ? `<p><strong>Address:</strong> ${order.fulfillment.address}</p>` : ''}
-                    ${order.fulfillment?.instructions ? `<p><strong>Instructions:</strong> ${order.fulfillment.instructions}</p>` : ''}
+                    <p><strong>Method:</strong> ${deliveryMethod ? deliveryMethod.name : fulfillmentMethod || 'N/A'}</p>
+                    ${deliveryInfo.address ? `<p><strong>Address:</strong> ${deliveryInfo.address}</p>` : ''}
+                    ${deliveryInfo.city ? `<p><strong>City:</strong> ${deliveryInfo.city}</p>` : ''}
+                    ${pickupInfo.time ? `<p><strong>Pickup Time:</strong> ${pickupInfo.time}</p>` : ''}
+                    ${deliveryInfo.notes ? `<p><strong>Delivery Notes:</strong> ${deliveryInfo.notes}</p>` : ''}
+                    ${pickupInfo.notes ? `<p><strong>Pickup Notes:</strong> ${pickupInfo.notes}</p>` : ''}
                 </div>
             </div>
             
@@ -274,7 +318,7 @@ function displayOrderTrackingResult(order) {
                     ${order.items.map(item => `
                         <div class="flex justify-between items-center py-2 border-b last:border-b-0">
                             <span>${item.name} × ${item.quantity}</span>
-                            <span class="font-medium">${formatPrice(item.subtotal)}</span>
+                            <span class="font-medium">${formatPrice(item.subtotal || (item.price * item.quantity))}</span>
                         </div>
                     `).join('')}
                 </div>
@@ -283,7 +327,7 @@ function displayOrderTrackingResult(order) {
             <div class="border-t pt-4">
                 <div class="flex justify-between items-center mb-2">
                     <span>Subtotal:</span>
-                    <span>${formatPrice(order.pricing?.subtotal || 0)}</span>
+                    <span>${formatPrice(order.pricing?.subtotal || (order.total - (order.pricing?.delivery || 0)))}</span>
                 </div>
                 <div class="flex justify-between items-center mb-2">
                     <span>Delivery:</span>
@@ -381,7 +425,7 @@ function showOrderNotFound() {
                 <li>• Order was placed through this website</li>
             </ul>
             <p class="text-sm text-yellow-600 mt-4">
-                Need help? Contact our support team.
+                Need help? Contact our support team at +233 59 961 3762
             </p>
         </div>
     `;
@@ -390,10 +434,10 @@ function showOrderNotFound() {
 }
 
 // ============================================================================
-// ORDER STATUS MANAGEMENT
+// ORDER STATUS MANAGEMENT - ENHANCED
 // ============================================================================
 
-export async function updateOrderStatus(orderId, newStatus) {
+export async function updateOrderStatus(orderId, newStatus, adminNotes = '', paymentMethod = '') {
     const order = orders.find(o => o.id === orderId);
     if (!order) {
         showNotification('Order not found', 'error');
@@ -415,12 +459,20 @@ export async function updateOrderStatus(orderId, newStatus) {
         });
     }
     
-    // Try to update via API
+    // Try to update via API - FIXED: Use correct parameters
     try {
-        await callViaProxy('update_order_status', { orderId, status: newStatus });
-        console.log(`✅ Order ${orderId} status updated via API: ${oldStatus} → ${newStatus}`);
+        const updateData = { orderId, status: newStatus };
+        if (adminNotes) updateData.adminNotes = adminNotes;
+        if (paymentMethod) updateData.paymentMethod = paymentMethod;
+        
+        const apiResponse = await callViaProxy('update_order_status', updateData);
+        if (apiResponse.success) {
+            console.log(`✅ Order ${orderId} status updated via API: ${oldStatus} → ${newStatus}`);
+            showNotification(`Order #${orderId} synced to server`, 'success');
+        }
     } catch (error) {
         console.warn(`⚠️ Failed to update order ${orderId} via API:`, error);
+        showNotification(`Order #${orderId} updated locally (sync failed)`, 'warning');
     }
     
     showNotification(`Order #${orderId} marked as ${newStatus}`, 'success');
@@ -489,16 +541,25 @@ function showOrderConfirmation(order, submittedViaAPI) {
                     </p>
                     <div class="bg-gray-50 rounded-lg p-4 mb-4 text-left">
                         <p><strong>Total:</strong> ${formatPrice(order.total)}</p>
-                        <p><strong>Method:</strong> ${order.fulfillment.method === 'delivery' ? 'Delivery' : 'Store Pickup'}</p>
+                        <p><strong>Method:</strong> ${order.fulfillmentMethod === 'delivery' ? 'Delivery' : 'Store Pickup'}</p>
                         <p><strong>Phone:</strong> ${order.customer.phone}</p>
                     </div>
-                    ${!submittedViaAPI ? `
-                        <div class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
-                            <p class="text-sm text-yellow-700">
-                                ⚠️ Order saved locally. Please ensure your internet connection is stable for order confirmation.
+                    ${submittedViaAPI ? `
+                        <div class="bg-green-50 border border-green-200 rounded p-3 mb-4">
+                            <p class="text-sm text-green-700">
+                                ✅ Order synced to server! You can track it from any device.
                             </p>
                         </div>
-                    ` : ''}
+                    ` : `
+                        <div class="bg-yellow-50 border border-yellow-200 rounded p-3 mb-4">
+                            <p class="text-sm text-yellow-700">
+                                ⚠️ Order saved locally. Please check internet connection for full sync.
+                            </p>
+                        </div>
+                    `}
+                    <div class="text-sm text-gray-600 mb-4">
+                        <p>Track your order: Use Order ID <strong>${order.id}</strong> and phone <strong>${order.customer.phone}</strong></p>
+                    </div>
                     <button onclick="closeOrderConfirmation()" 
                             class="w-full bg-orange-500 text-white py-2 px-4 rounded hover:bg-orange-600">
                         Continue Shopping
@@ -554,6 +615,34 @@ function updateCartUI() {
         cart.updateCartUI();
     });
 }
+
+// ============================================================================
+// DEBUG FUNCTIONS
+// ============================================================================
+
+/**
+ * Debug order system - call from console
+ */
+window.debugOrderSystem = async function() {
+    console.log('🔧 DEBUG: Testing order system...');
+    
+    console.log('📋 Local Orders:', orders.length);
+    orders.forEach(order => {
+        console.log(`  • ${order.id}: ${order.customer.name} (${order.status})`);
+    });
+    
+    console.log('🛒 Current Cart:', cart.length, 'items');
+    
+    // Test API connectivity
+    try {
+        const apiResponse = await callViaProxy('verify_system');
+        console.log('🌐 API Test:', apiResponse.success ? '✅ Working' : '❌ Failed');
+    } catch (error) {
+        console.log('🌐 API Test: ❌ Failed -', error.message);
+    }
+    
+    console.log('✅ Order system debug complete');
+};
 
 // ============================================================================
 // GLOBAL FUNCTION BINDINGS
