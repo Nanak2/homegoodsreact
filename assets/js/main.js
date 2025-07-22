@@ -70,6 +70,11 @@ export function bindGlobalFunctions() {
     window.testConnection = testConnection;
     window.testProxyHealth = testProxyHealth;
     
+    // Import and bind additional admin functions
+    import('./admin.js').then(admin => {
+        window.loadAdminData = admin.loadAdminData;
+    });
+    
     console.log('✅ Admin functions bound to window');
     
     // Bind utility functions

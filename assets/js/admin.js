@@ -190,39 +190,61 @@ function updateAdminStatsDisplay(stats = null) {
 
 function updateOrdersDisplay() {
     const ordersContainer = document.getElementById('ordersContainer');
+    const orderCount = document.getElementById('orderCount');
+    
     if (!ordersContainer) return;
+    
+    // Update order count
+    if (orderCount) {
+        orderCount.textContent = orders.length;
+    }
     
     if (orders.length === 0) {
         ordersContainer.innerHTML = '<p class="text-gray-500 text-center py-4">No orders found</p>';
         return;
     }
     
-    const ordersHTML = orders.map(order => `
-        <div class="border rounded-lg p-4 bg-white">
-            <div class="flex justify-between items-start mb-2">
-                <h3 class="font-semibold text-lg">Order #${order.id}</h3>
-                <span class="px-3 py-1 rounded-full text-sm ${getStatusClass(order.status)}">
-                    ${order.status || 'pending'}
-                </span>
+    const ordersHTML = orders.map(order => {
+        const isCompleted = order.status === 'completed';
+        const isConfirmed = order.status === 'confirmed';
+        const isPending = order.status === 'pending';
+        
+        return `
+            <div class="border rounded-lg p-4 bg-white mb-4">
+                <div class="flex justify-between items-start mb-2">
+                    <h3 class="font-semibold text-lg">Order #${order.id}</h3>
+                    <span class="px-3 py-1 rounded-full text-sm ${getStatusClass(order.status)}">
+                        ${order.status || 'pending'}
+                    </span>
+                </div>
+                <div class="text-gray-600 mb-2">
+                    <p><strong>Customer:</strong> ${order.customer?.name || 'N/A'}</p>
+                    <p><strong>Phone:</strong> ${order.customer?.phone || 'N/A'}</p>
+                    <p><strong>Total:</strong> ${formatPrice(order.total)}</p>
+                    <p><strong>Date:</strong> ${formatDate(order.timestamp)}</p>
+                </div>
+                <div class="flex gap-2 mt-3">
+                    ${isPending ? `
+                        <button onclick="updateOrderStatus('${order.id}', 'confirmed')" 
+                                class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
+                            Confirm Order
+                        </button>
+                    ` : ''}
+                    ${(isPending || isConfirmed) && !isCompleted ? `
+                        <button onclick="updateOrderStatus('${order.id}', 'completed')" 
+                                class="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600">
+                            Mark Complete
+                        </button>
+                    ` : ''}
+                    ${isCompleted ? `
+                        <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm">
+                            ✅ Order Completed
+                        </span>
+                    ` : ''}
+                </div>
             </div>
-            <div class="text-gray-600 mb-2">
-                <p><strong>Customer:</strong> ${order.customer?.name || 'N/A'}</p>
-                <p><strong>Phone:</strong> ${order.customer?.phone || 'N/A'}</p>
-                <p><strong>Total:</strong> ${formatPrice(order.total)}</p>
-                <p><strong>Date:</strong> ${formatDate(order.timestamp)}</p>
-            </div>
-            <div class="flex gap-2 mt-3">
-                <button onclick="updateOrderStatus('${order.id}', 'confirmed')" 
-                        class="px-3 py-1 bg-blue-500 text-white rounded text-sm hover:bg-blue-600">
-                    Confirm
-                </button>
-                <button onclick="updateOrderStatus('${order.id}', 'completed')" 
-                        class="px-3 py-1 bg-green-500 text-white rounded text-sm hover:bg-green-600">
-                    Complete
-                </button>
-            </div>
-        </div>
-    `).join('');
+        `;
+    }).join('');
     
     ordersContainer.innerHTML = ordersHTML;
 }
@@ -317,14 +339,27 @@ window.updateOrderStatus = function(orderId, newStatus) {
         return;
     }
     
+    const oldStatus = orders[orderIndex].status;
     orders[orderIndex].status = newStatus;
     localStorage.setItem('gh_orders', JSON.stringify(orders));
     
+    // Update displays immediately
     updateOrdersDisplay();
     updateAdminStatsDisplay();
     
+    // Try API update
+    updateOrderStatus(orderId, newStatus).catch(error => {
+        console.warn('API update failed:', error);
+    });
+    
     showNotification(`Order #${orderId} marked as ${newStatus}`, 'success');
-    console.log(`📋 Order ${orderId} status updated to: ${newStatus}`);
+    console.log(`📋 Order ${orderId} status updated: ${oldStatus} → ${newStatus}`);
+};
+
+// Make loadAdminData available globally
+window.loadAdminData = function() {
+    console.log('📊 Refreshing admin data...');
+    loadAdminData();
 };
 
 // Export the current admin state

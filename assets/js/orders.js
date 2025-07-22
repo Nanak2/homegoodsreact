@@ -312,26 +312,49 @@ function createOrderProgressTracker(status) {
     const currentIndex = steps.findIndex(step => step.key === status);
     
     return `
-        <div class="mt-6 pt-6 border-t">
-            <h4 class="font-semibold mb-4">Order Progress</h4>
-            <div class="flex items-center justify-between">
+        <div style="margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #e5e7eb;">
+            <h4 style="font-weight: 600; margin-bottom: 1rem;">Order Progress</h4>
+            <div style="display: flex; align-items: center; justify-content: space-between; position: relative;">
                 ${steps.map((step, index) => {
                     const isActive = index <= currentIndex;
-                    const isCompleted = index < currentIndex;
+                    const isCurrentStep = index === currentIndex;
                     return `
-                        <div class="flex flex-col items-center flex-1">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center text-lg
-                                        ${isActive ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'}">
+                        <div style="display: flex; flex-direction: column; align-items: center; flex: 1; position: relative; z-index: 1;">
+                            <div style="
+                                width: 40px; 
+                                height: 40px; 
+                                border-radius: 50%; 
+                                display: flex; 
+                                align-items: center; 
+                                justify-content: center; 
+                                font-size: 18px;
+                                background-color: ${isActive ? '#10b981' : '#e5e7eb'};
+                                color: ${isActive ? 'white' : '#6b7280'};
+                                border: 2px solid ${isCurrentStep ? '#059669' : 'transparent'};
+                            ">
                                 ${step.icon}
                             </div>
-                            <span class="text-sm mt-2 text-center ${isActive ? 'text-green-600 font-medium' : 'text-gray-500'}">
+                            <span style="
+                                font-size: 12px; 
+                                margin-top: 8px; 
+                                text-align: center;
+                                color: ${isActive ? '#059669' : '#6b7280'};
+                                font-weight: ${isActive ? '500' : '400'};
+                            ">
                                 ${step.label}
                             </span>
-                            ${index < steps.length - 1 ? `
-                                <div class="hidden md:block absolute w-full h-0.5 bg-gray-200 top-5 left-1/2 z-0
-                                            ${isCompleted ? 'bg-green-500' : ''}"></div>
-                            ` : ''}
                         </div>
+                        ${index < steps.length - 1 ? `
+                            <div style="
+                                position: absolute;
+                                top: 20px;
+                                left: ${(index + 1) * 33.33 - 16.66}%;
+                                width: 33.33%;
+                                height: 2px;
+                                background-color: ${index < currentIndex ? '#10b981' : '#e5e7eb'};
+                                z-index: 0;
+                            "></div>
+                        ` : ''}
                     `;
                 }).join('')}
             </div>
@@ -380,6 +403,17 @@ export async function updateOrderStatus(orderId, newStatus) {
     const oldStatus = order.status;
     order.status = newStatus;
     setOrders(orders);
+    
+    // Refresh admin display if on admin page
+    const adminPage = document.getElementById('adminPage');
+    if (adminPage && !adminPage.classList.contains('hidden')) {
+        // Dynamically import and refresh admin display
+        import('./admin.js').then(admin => {
+            admin.loadAdminData();
+        }).catch(error => {
+            console.warn('Could not refresh admin display:', error);
+        });
+    }
     
     // Try to update via API
     try {
