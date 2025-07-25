@@ -362,5 +362,166 @@ window.loadAdminData = function() {
     loadAdminData();
 };
 
-// Export the current admin state
+// CLEAN EXPORT - NO DUPLICATES - ONLY THIS ONE LINE
 export { isAdmin };
+
+// ============================================================================
+// ENHANCED ADMIN FEATURES - ADD TO END OF EXISTING admin.js
+// ============================================================================
+
+// Enhanced view order details
+window.viewOrderDetails = function(orderId) {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) {
+        showNotification('Order not found', 'error');
+        return;
+    }
+    
+    const fulfillmentInfo = order.fulfillmentMethod === 'pickup' 
+        ? `🏪 Pickup: ${order.pickup?.time || 'Time not specified'}`
+        : `🚚 Delivery: ${order.delivery?.address || 'Address not specified'}`;
+    
+    const itemsList = order.items 
+        ? order.items.map(item => `${item.name} × ${item.quantity} = ${formatPrice(item.subtotal || item.price * item.quantity)}`).join('\n')
+        : 'Items not available';
+    
+    alert(`📋 Order #${orderId} Details\n\n` +
+          `👤 Customer: ${order.customer?.name || 'N/A'}\n` +
+          `📞 Phone: ${order.customer?.phone || 'N/A'}\n` +
+          `📧 Email: ${order.customer?.email || 'Not provided'}\n\n` +
+          `📦 Fulfillment: ${fulfillmentInfo}\n\n` +
+          `🛒 Items:\n${itemsList}\n\n` +
+          `💰 Total: ${formatPrice(order.total)}\n` +
+          `📅 Date: ${formatDate(order.timestamp)}\n` +
+          `📊 Status: ${order.status}`);
+};
+
+window.cancelOrder = function(orderId) {
+    if (!confirm(`Are you sure you want to cancel Order #${orderId}?\n\nThis action cannot be undone.`)) {
+        return;
+    }
+    window.updateOrderStatus(orderId, 'cancelled');
+};
+
+// Enhanced status icons function
+function getStatusIcon(status) {
+    const icons = {
+        'pending': '⏳',
+        'confirmed': '✅', 
+        'completed': '🎉',
+        'cancelled': '❌'
+    };
+    return icons[status] || '📋';
+}
+
+// Enhanced updateOrdersDisplay function - REPLACE existing one
+function updateOrdersDisplayEnhanced() {
+    const ordersContainer = document.getElementById('ordersContainer');
+    const orderCount = document.getElementById('orderCount');
+    
+    if (!ordersContainer) return;
+    
+    if (orderCount) {
+        orderCount.textContent = orders.length;
+    }
+    
+    if (orders.length === 0) {
+        ordersContainer.innerHTML = `
+            <div class="empty-orders" style="text-align: center; padding: 3rem; color: #6b7280;">
+                <p style="font-size: 1.125rem; margin-bottom: 1rem;">No orders found</p>
+                <button class="button" onclick="window.loadAdminData?.()">
+                    🔄 Refresh Orders
+                </button>
+            </div>
+        `;
+        return;
+    }
+    
+    // Sort orders by date (newest first)
+    const sortedOrders = [...orders].sort((a, b) => 
+        new Date(b.timestamp) - new Date(a.timestamp)
+    );
+    
+    const ordersHTML = sortedOrders.map(order => {
+        const isCompleted = order.status === 'completed';
+        const isConfirmed = order.status === 'confirmed';
+        const isPending = order.status === 'pending';
+        const isCancelled = order.status === 'cancelled';
+        
+        return `
+            <div class="border rounded-lg p-4 bg-white mb-4 order-card">
+                <div class="flex justify-between items-start mb-2 order-header">
+                    <div>
+                        <h3 class="font-semibold text-lg order-id">Order #${order.id}</h3>
+                        <span class="px-3 py-1 rounded-full text-sm order-status-badge ${getStatusClass(order.status)}">
+                            ${getStatusIcon(order.status)} ${order.status || 'pending'}
+                        </span>
+                    </div>
+                </div>
+                
+                <div class="text-gray-600 mb-2">
+                    <p><strong>Customer:</strong> ${order.customer?.name || 'N/A'}</p>
+                    <p><strong>Phone:</strong> ${order.customer?.phone || 'N/A'}</p>
+                    <p><strong>Total:</strong> ${formatPrice(order.total)}</p>
+                    <p><strong>Date:</strong> ${formatDate(order.timestamp)}</p>
+                </div>
+                
+                <div class="flex gap-2 mt-3 order-actions" style="flex-wrap: wrap;">
+                    <!-- Always show View Details -->
+                    <button onclick="viewOrderDetails('${order.id}')" 
+                            class="action-btn btn-view" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #6b7280 0%, #9ca3af 100%); color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
+                        👁️ View Details
+                    </button>
+                    
+                    ${isPending ? `
+                        <button onclick="updateOrderStatus('${order.id}', 'confirmed')" 
+                                class="action-btn btn-confirm" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #16a34a 0%, #22c55e 100%); color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
+                            ✅ Confirm Payment
+                        </button>
+                        <button onclick="cancelOrder('${order.id}')" 
+                                class="action-btn btn-cancel" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #dc2626 0%, #ef4444 100%); color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
+                            ❌ Cancel Order
+                        </button>
+                    ` : ''}
+                    
+                    ${isConfirmed ? `
+                        <button onclick="updateOrderStatus('${order.id}', 'completed')" 
+                                class="action-btn btn-complete" style="padding: 0.5rem 1rem; background: linear-gradient(135deg, #2563eb 0%, #3b82f6 100%); color: white; border: none; border-radius: 0.375rem; cursor: pointer; font-size: 0.875rem; font-weight: 600;">
+                            🎉 Mark Complete
+                        </button>
+                    ` : ''}
+                    
+                    ${isCompleted ? `
+                        <span class="px-3 py-1 bg-gray-100 text-gray-600 rounded text-sm">
+                            ✅ Order Completed
+                        </span>
+                    ` : ''}
+                    
+                    ${isCancelled ? `
+                        <span class="px-3 py-1 bg-red-100 text-red-600 rounded text-sm">
+                            ❌ Order Cancelled
+                        </span>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }).join('');
+    
+    ordersContainer.innerHTML = ordersHTML;
+}
+
+// Replace the original function
+updateOrdersDisplay = updateOrdersDisplayEnhanced;
+
+// Make sure enhanced admin loads by default
+if (typeof window.loadAdminData === 'function') {
+    setTimeout(() => {
+        try {
+            window.loadAdminData();
+        } catch (error) {
+            console.warn('Could not auto-refresh admin data:', error);
+        }
+    }, 500);
+}
+
+console.log('✅ Enhanced admin features loaded');

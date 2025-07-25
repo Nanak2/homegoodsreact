@@ -1,10 +1,10 @@
-// main.js - Application bootstrap and global function bindings
+// main.js - Your working version with minimal backend features added
 
 import { initializeState, showNotification } from './utils.js';
 import { adminLogin, adminLogout, testConnection, testProxyHealth } from './admin.js';
 
 // ============================================================================
-// GLOBAL FUNCTION BINDINGS
+// GLOBAL FUNCTION BINDINGS - EXACT COPY OF YOUR WORKING VERSION
 // ============================================================================
 
 // This function will be called once other modules are loaded
@@ -73,6 +73,11 @@ export function bindGlobalFunctions() {
     // Import and bind additional admin functions
     import('./admin.js').then(admin => {
         window.loadAdminData = admin.loadAdminData;
+        
+        // MINIMAL ADDITION: Backend sync if available
+        if (admin.loadOrdersFromBackend) {
+            window.loadOrdersFromBackend = admin.loadOrdersFromBackend;
+        }
     });
     
     console.log('✅ Admin functions bound to window');
@@ -84,7 +89,7 @@ export function bindGlobalFunctions() {
 }
 
 // ============================================================================
-// APPLICATION INITIALIZATION
+// APPLICATION INITIALIZATION - EXACT COPY OF YOUR WORKING VERSION
 // ============================================================================
 
 let isInitialized = false;
@@ -118,7 +123,7 @@ export function initializeApp() {
 }
 
 // ============================================================================
-// EVENT LISTENERS
+// EVENT LISTENERS - EXACT COPY OF YOUR WORKING VERSION
 // ============================================================================
 
 function setupEventListeners() {
@@ -209,7 +214,7 @@ function setupEventListeners() {
 }
 
 // ============================================================================
-// INITIALIZATION HELPERS
+// INITIALIZATION HELPERS - EXACT COPY OF YOUR WORKING VERSION
 // ============================================================================
 
 function checkAdminSession() {
@@ -243,7 +248,7 @@ function loadInitialData() {
 }
 
 // ============================================================================
-// START APPLICATION
+// START APPLICATION - EXACT COPY OF YOUR WORKING VERSION
 // ============================================================================
 
 // Initialize when DOM is ready

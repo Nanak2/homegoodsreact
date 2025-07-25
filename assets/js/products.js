@@ -414,4 +414,9 @@ window.forceLoadFromSheets = async function() {
 // EXPORTS
 // ============================================================================
 
-export { products };
+;
+function getProductById(id) {
+    return products.find(p => p.id === id);
+}
+
+export { products, getProductById };

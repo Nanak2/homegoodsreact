@@ -1,4 +1,4 @@
-// orders.js - Complete order management and checkout with FIXED API integration
+// orders.js - Complete order management and checkout with ENHANCED PICKUP TIME SLOTS
 
 import { 
     cart, 
@@ -21,8 +21,35 @@ import {
 
 import { callViaProxy, testProxyHealth } from './api.js';
 
+// ADD THIS: Enhanced pickup time slots configuration (from working single file)
+const PICKUP_TIME_SLOTS = {
+    'morning': {
+        label: 'Morning (9:00 AM - 12:00 PM)',
+        description: 'Best for early pickups',
+        icon: '🌅'
+    },
+    'afternoon': {
+        label: 'Afternoon (12:00 PM - 4:00 PM)', 
+        description: 'Most popular time slot',
+        icon: '☀️'
+    },
+    'evening': {
+        label: 'Evening (4:00 PM - 7:00 PM)',
+        description: 'Perfect for after work',
+        icon: '🌆'
+    }
+};
+
+// ADD THIS: Store information for pickup
+const STORE_INFO = {
+    name: "GHHomegoods Store",
+    phone: "+233 59 961 3762",
+    address: "Airport, Accra",
+    hours: "Monday - Saturday: 8:00 AM - 7:00 PM"
+};
+
 // ============================================================================
-// ORDER PLACEMENT - FIXED API INTEGRATION
+// ORDER PLACEMENT - ENHANCED WITH PICKUP TIME SLOTS
 // ============================================================================
 
 export async function placeOrder() {
@@ -48,15 +75,15 @@ export async function placeOrder() {
         // Create order object in format expected by Google Apps Script
         const order = createGoogleSheetsCompatibleOrder(orderData);
         
-        // Attempt to submit via API - FIXED: Wrap order in object
+        // Attempt to submit via API - CRITICAL: This enables cross-device sync
         let orderSubmitted = false;
         try {
             console.log('🌐 Submitting order to Google Apps Script API...');
-            const apiResponse = await callViaProxy('place_order', { order }); // FIXED: Wrapped in object
+            const apiResponse = await callViaProxy('place_order', { order });
             if (apiResponse.success) {
                 orderSubmitted = true;
-                console.log('✅ Order submitted via API successfully');
-                showNotification('Order synced to server!', 'success');
+                console.log('✅ Order placed via backend - enables cross-device sync');
+                showNotification('Order synced to server - visible on all devices!', 'success');
             }
         } catch (apiError) {
             console.warn('⚠️ API submission failed, falling back to local storage:', apiError);
@@ -144,7 +171,7 @@ function validateAndCollectOrderData() {
     return data;
 }
 
-// FIXED: Create order object compatible with Google Apps Script backend
+// ENHANCED: Create order object compatible with Google Apps Script backend
 function createGoogleSheetsCompatibleOrder(orderData) {
     const orderId = `GH${incrementOrderCounter()}`;
     const timestamp = new Date().toISOString();
@@ -160,12 +187,13 @@ function createGoogleSheetsCompatibleOrder(orderData) {
     return {
         id: orderId,
         timestamp: timestamp,
+        date: timestamp, // Add both for compatibility
         customer: {
             name: orderData.customerName,
             phone: orderData.customerPhone,
             email: orderData.customerEmail || 'Not provided'
         },
-        fulfillmentMethod: orderData.fulfillmentMethod, // Match Google Apps Script field
+        fulfillmentMethod: orderData.fulfillmentMethod,
         delivery: {
             address: orderData.deliveryAddress || '',
             city: orderData.deliveryCity || '',
@@ -185,6 +213,7 @@ function createGoogleSheetsCompatibleOrder(orderData) {
         total: total,
         itemCount: itemCount,
         status: ORDER_STATUSES.PENDING,
+        source: window.location.hostname || 'Website', // ADD THIS: Track order source
         // Legacy fields for backward compatibility
         pricing: {
             subtotal: subtotal,
@@ -200,7 +229,204 @@ function createGoogleSheetsCompatibleOrder(orderData) {
 }
 
 // ============================================================================
-// ORDER TRACKING - FIXED API INTEGRATION
+// ENHANCED CHECKOUT FORM CREATION (ADD PICKUP TIME SLOTS)
+// ============================================================================
+
+// ADD THIS: Function to create enhanced checkout form with pickup time slots
+export function createEnhancedCheckoutForm() {
+    const checkoutBody = document.getElementById('checkoutBody') || document.getElementById('checkoutModal');
+    if (!checkoutBody) return;
+    
+    const total = cart.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+    
+    const orderSummaryHTML = cart.map(item => `
+        <div class="order-item">
+            <span>${item.name} × ${item.quantity}</span>
+            <span>GH₵ ${(item.price * item.quantity).toFixed(2)}</span>
+        </div>
+    `).join('');
+    
+    checkoutBody.innerHTML = `
+        <form id="checkoutForm">
+            <div class="checkout-section">
+                <h3>📦 Order Summary</h3>
+                <div class="order-summary">
+                    ${orderSummaryHTML}
+                    <div class="order-item">
+                        <span><strong>Total (${itemCount} items)</strong></span>
+                        <span><strong>GH₵ ${total.toFixed(2)}</strong></span>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="checkout-section">
+                <h3>🚚 Fulfillment Method</h3>
+                <div class="fulfillment-options">
+                    <div class="fulfillment-option selected" onclick="selectFulfillment('delivery')">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚚</div>
+                        <strong>Delivery</strong>
+                        <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #6b7280;">
+                            Free delivery in Greater Accra for orders over GH₵200
+                            ${total >= 200 ? '<br><span style="color: #16a34a; font-weight: bold;">✅ Free delivery qualified!</span>' : ''}
+                        </p>
+                    </div>
+                    <div class="fulfillment-option" onclick="selectFulfillment('pickup')">
+                        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏪</div>
+                        <strong>Pickup</strong>
+                        <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #6b7280;">
+                            Pickup from our Airport location<br>
+                            <span style="color: #16a34a; font-weight: bold;">Always free!</span>
+                        </p>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="checkout-section">
+                <h3>👤 Customer Information</h3>
+                <div class="form-group">
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" name="customerName" class="form-input required" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Phone Number *</label>
+                    <input type="tel" name="customerPhone" class="form-input required" placeholder="0XX XXX XXXX" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Email (Optional)</label>
+                    <input type="email" name="customerEmail" class="form-input" placeholder="your.email@example.com">
+                </div>
+            </div>
+            
+            <div class="checkout-section" id="deliverySection">
+                <h3>📍 Delivery Information</h3>
+                <div class="form-group">
+                    <label class="form-label">Delivery Address *</label>
+                    <input type="text" name="deliveryAddress" class="form-input required" placeholder="House number, street, area" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">City/Town *</label>
+                    <input type="text" name="deliveryCity" class="form-input required" placeholder="e.g., Accra" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Delivery Notes (Optional)</label>
+                    <textarea name="specialInstructions" class="form-input" placeholder="Landmark, special instructions, etc." rows="3"></textarea>
+                </div>
+            </div>
+            
+            <!-- ENHANCED PICKUP SECTION WITH TIME SLOTS -->
+            <div class="checkout-section hidden" id="pickupSection">
+                <h3>🏪 Pickup Information</h3>
+                
+                <div class="pickup-location-info">
+                    <div style="background: #e0f2fe; border: 1px solid #0284c7; padding: 1.5rem; border-radius: 0.5rem; margin-bottom: 1.5rem;">
+                        <h4 style="color: #0369a1; margin: 0 0 1rem 0;">📍 Pickup Location</h4>
+                        <div style="color: #0369a1; line-height: 1.6;">
+                            <strong>${STORE_INFO.name}</strong><br>
+                            📍 ${STORE_INFO.address}<br>
+                            📞 ${STORE_INFO.phone}<br>
+                            🕒 ${STORE_INFO.hours}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Preferred Pickup Time Slot *</label>
+                    <div class="pickup-time-slots">
+                        ${Object.entries(PICKUP_TIME_SLOTS).map(([value, slot]) => `
+                            <div class="pickup-time-option" data-time="${value}" onclick="selectPickupTime('${value}')">
+                                <div class="pickup-time-icon">${slot.icon}</div>
+                                <div class="pickup-time-details">
+                                    <div class="pickup-time-label">${slot.label}</div>
+                                    <div class="pickup-time-description">${slot.description}</div>
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                    <input type="hidden" name="pickupTime" id="selectedPickupTime">
+                </div>
+                
+                <div class="form-group">
+                    <label class="form-label">Pickup Notes (Optional)</label>
+                    <textarea name="specialInstructions" class="form-input" placeholder="Any special instructions for pickup" rows="3"></textarea>
+                </div>
+                
+                <div class="pickup-benefits">
+                    <div style="background: #dcfce7; border: 1px solid #16a34a; padding: 1rem; border-radius: 0.5rem; margin-top: 1rem;">
+                        <h4 style="color: #166534; margin: 0 0 0.5rem 0;">✅ Pickup Benefits</h4>
+                        <ul style="color: #166534; margin: 0; padding-left: 1.5rem; font-size: 0.875rem;">
+                            <li>Always free - no delivery charges</li>
+                            <li>Faster - ready within 2-4 hours after payment</li>
+                            <li>Inspect items before taking them</li>
+                            <li>Personal service from our team</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 1rem; margin-top: 2rem;">
+                <button type="button" class="button-secondary" onclick="closeCheckoutModal()" style="flex: 1;">
+                    ← Back to Cart
+                </button>
+                <button type="button" class="button" id="submitOrder" onclick="placeOrder()" style="flex: 2;">
+                    <span id="placeOrderText">Place Order</span>
+                    <span class="loading-spinner hidden" id="orderLoadingSpinner"></span>
+                </button>
+            </div>
+        </form>
+    `;
+}
+
+// ADD THIS: Fulfillment method selection
+window.selectFulfillment = function(method) {
+    document.querySelectorAll('.fulfillment-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    event.target.closest('.fulfillment-option').classList.add('selected');
+    
+    const deliverySection = document.getElementById('deliverySection');
+    const pickupSection = document.getElementById('pickupSection');
+    
+    if (method === 'delivery') {
+        deliverySection?.classList.remove('hidden');
+        pickupSection?.classList.add('hidden');
+        
+        // Update form field name
+        const formEl = document.createElement('input');
+        formEl.type = 'hidden';
+        formEl.name = 'fulfillmentMethod';
+        formEl.value = 'delivery';
+        document.getElementById('checkoutForm')?.appendChild(formEl);
+    } else {
+        deliverySection?.classList.add('hidden');
+        pickupSection?.classList.remove('hidden');
+        
+        // Update form field name
+        const formEl = document.createElement('input');
+        formEl.type = 'hidden';
+        formEl.name = 'fulfillmentMethod';
+        formEl.value = 'pickup';
+        document.getElementById('checkoutForm')?.appendChild(formEl);
+    }
+};
+
+// ADD THIS: Pickup time selection
+window.selectPickupTime = function(timeSlot) {
+    document.querySelectorAll('.pickup-time-option').forEach(option => {
+        option.classList.remove('selected');
+    });
+    
+    event.target.closest('.pickup-time-option').classList.add('selected');
+    
+    const hiddenInput = document.getElementById('selectedPickupTime');
+    if (hiddenInput) {
+        hiddenInput.value = timeSlot;
+    }
+};
+
+// ============================================================================
+// ORDER TRACKING - ENHANCED WITH PICKUP TIME DISPLAY
 // ============================================================================
 
 export async function trackOrder() {
@@ -224,13 +450,11 @@ export async function trackOrder() {
         let order = null;
         try {
             console.log('🌐 Checking Google Apps Script for order...');
-            // FIXED: Use correct API action and parameter names
             const apiResponse = await callViaProxy('lookup_customer_order', { 
                 orderId, 
-                phoneNumber: phone // FIXED: Changed from 'phone' to 'phoneNumber'
+                phoneNumber: phone
             });
             
-            // FIXED: Check correct response data path
             if (apiResponse.success && apiResponse.data && apiResponse.data.order) {
                 order = apiResponse.data.order;
                 console.log('✅ Order found via Google Apps Script API (cross-device)');
@@ -283,13 +507,19 @@ function displayOrderTrackingResult(order) {
     const pickupInfo = order.pickup || {};
     const fulfillmentMethod = order.fulfillmentMethod || order.fulfillment?.method;
     
+    // ENHANCED: Better fulfillment details with pickup time display
+    const fulfillmentDetails = getFulfillmentDetails(order);
+    
     orderDetails.innerHTML = `
         <div class="bg-white rounded-lg border p-6">
             <div class="flex justify-between items-start mb-4">
                 <h3 class="text-xl font-bold">Order #${order.id}</h3>
-                <span class="px-3 py-1 rounded-full text-sm font-medium ${statusClass}">
-                    ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
-                </span>
+                <div class="flex items-center gap-2">
+                    ${order.source ? `<span class="text-xs text-gray-500">📡 ${order.source}</span>` : ''}
+                    <span class="px-3 py-1 rounded-full text-sm font-medium ${statusClass}">
+                        ${order.status.charAt(0).toUpperCase() + order.status.slice(1)}
+                    </span>
+                </div>
             </div>
             
             <div class="grid md:grid-cols-2 gap-6 mb-6">
@@ -304,11 +534,9 @@ function displayOrderTrackingResult(order) {
                 <div>
                     <h4 class="font-semibold mb-2">Fulfillment</h4>
                     <p><strong>Method:</strong> ${deliveryMethod ? deliveryMethod.name : fulfillmentMethod || 'N/A'}</p>
-                    ${deliveryInfo.address ? `<p><strong>Address:</strong> ${deliveryInfo.address}</p>` : ''}
-                    ${deliveryInfo.city ? `<p><strong>City:</strong> ${deliveryInfo.city}</p>` : ''}
-                    ${pickupInfo.time ? `<p><strong>Pickup Time:</strong> ${pickupInfo.time}</p>` : ''}
-                    ${deliveryInfo.notes ? `<p><strong>Delivery Notes:</strong> ${deliveryInfo.notes}</p>` : ''}
-                    ${pickupInfo.notes ? `<p><strong>Pickup Notes:</strong> ${pickupInfo.notes}</p>` : ''}
+                    ${fulfillmentDetails ? `<p><strong>Details:</strong> ${fulfillmentDetails}</p>` : ''}
+                    ${deliveryInfo.notes ? `<p><strong>Notes:</strong> ${deliveryInfo.notes}</p>` : ''}
+                    ${pickupInfo.notes ? `<p><strong>Notes:</strong> ${pickupInfo.notes}</p>` : ''}
                 </div>
             </div>
             
@@ -344,6 +572,31 @@ function displayOrderTrackingResult(order) {
     `;
     
     trackingResult.classList.remove('hidden');
+}
+
+// ADD THIS: Enhanced fulfillment details helper
+function getFulfillmentDetails(order) {
+    if (!order.fulfillmentMethod) return '';
+    
+    if (order.fulfillmentMethod === 'delivery') {
+        const address = order.delivery?.address || '';
+        const city = order.delivery?.city || '';
+        return `🚚 Delivery to: ${address}${city ? ', ' + city : ''}`;
+    } else {
+        const pickupTime = getPickupTimeDisplay(order.pickup?.time);
+        return `🏪 Pickup: ${pickupTime} at ${STORE_INFO.address}`;
+    }
+}
+
+// ADD THIS: Pickup time display helper (from working single file)
+function getPickupTimeDisplay(pickupTime) {
+    const timeSlots = {
+        'morning': 'Morning (9:00 AM - 12:00 PM)',
+        'afternoon': 'Afternoon (12:00 PM - 4:00 PM)', 
+        'evening': 'Evening (4:00 PM - 7:00 PM)'
+    };
+    
+    return timeSlots[pickupTime] || pickupTime || 'Time not specified';
 }
 
 function createOrderProgressTracker(status) {
@@ -434,7 +687,7 @@ function showOrderNotFound() {
 }
 
 // ============================================================================
-// ORDER STATUS MANAGEMENT - ENHANCED
+// ORDER STATUS MANAGEMENT - ENHANCED WITH BACKEND SYNC
 // ============================================================================
 
 export async function updateOrderStatus(orderId, newStatus, adminNotes = '', paymentMethod = '') {
@@ -459,7 +712,7 @@ export async function updateOrderStatus(orderId, newStatus, adminNotes = '', pay
         });
     }
     
-    // Try to update via API - FIXED: Use correct parameters
+    // Try to update via API - CRITICAL: This enables cross-device sync
     try {
         const updateData = { orderId, status: newStatus };
         if (adminNotes) updateData.adminNotes = adminNotes;
@@ -542,6 +795,7 @@ function showOrderConfirmation(order, submittedViaAPI) {
                     <div class="bg-gray-50 rounded-lg p-4 mb-4 text-left">
                         <p><strong>Total:</strong> ${formatPrice(order.total)}</p>
                         <p><strong>Method:</strong> ${order.fulfillmentMethod === 'delivery' ? 'Delivery' : 'Store Pickup'}</p>
+                        ${order.fulfillmentMethod === 'pickup' ? `<p><strong>Pickup Time:</strong> ${getPickupTimeDisplay(order.pickup?.time)}</p>` : ''}
                         <p><strong>Phone:</strong> ${order.customer.phone}</p>
                     </div>
                     ${submittedViaAPI ? `
@@ -652,6 +906,7 @@ window.debugOrderSystem = async function() {
 window.placeOrder = placeOrder;
 window.trackOrder = trackOrder;
 window.updateOrderStatus = updateOrderStatus;
+window.createEnhancedCheckoutForm = createEnhancedCheckoutForm;
 window.closeOrderConfirmation = function() {
     const confirmation = document.getElementById('orderConfirmation');
     if (confirmation) {
@@ -663,4 +918,4 @@ window.closeOrderConfirmation = function() {
 // EXPORTS
 // ============================================================================
 
-export { orders };
+export { orders, PICKUP_TIME_SLOTS, getPickupTimeDisplay };

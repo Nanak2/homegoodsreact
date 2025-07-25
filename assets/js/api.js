@@ -1,4 +1,4 @@
-// api.js - API communication and backend integration
+// api.js - API communication and backend integration with WORKING CROSS-DEVICE SYNC
 
 import { 
     showNotification, 
@@ -12,14 +12,161 @@ import {
     DEBUG
 } from './config.js';
 
+// ADD THIS: Simple, working proxy URLs (from working single file)
+const PROXY_URL = 'https://ghhomegoods.com/api/proxy.php';
+const PROXY_HEALTH_URL = 'https://ghhomegoods.com/api/proxy.php?health=1';
+
+// Connection state tracking
+let connectionStatus = 'unknown';
+
 // ============================================================================
-// CORE API FUNCTIONS
+// CORE API FUNCTIONS - SIMPLIFIED AND WORKING
 // ============================================================================
 
 /**
- * Main API communication function - handles all proxy calls
+ * CRITICAL: Main API communication function - EXACT implementation from working single file
+ * This is the key function that enables cross-device synchronization
  */
-export async function callViaProxy(action, data = {}, options = {}) {
+export async function callViaProxy(action, data = {}) {
+    try {
+        console.log(`📡 Proxy API Call: ${action}`, data);
+        
+        const response = await fetch(PROXY_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                action: action,
+                ...data
+            })
+        });
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+        
+        const result = await response.json();
+        console.log(`📡 Proxy Response: ${action}`, result);
+        
+        if (!result.success) {
+            throw new Error(result.message || 'API call failed');
+        }
+        
+        updateConnectionStatus('online');
+        return result;
+        
+    } catch (error) {
+        console.error(`💥 Proxy API Error (${action}):`, error);
+        updateConnectionStatus('offline');
+        throw error;
+    }
+}
+
+/**
+ * Test proxy server health - EXACT implementation from working single file
+ */
+export async function testProxyHealth() {
+    try {
+        updateConnectionStatus('testing');
+        
+        // Try the health endpoint first
+        try {
+            const response = await fetch(PROXY_HEALTH_URL, {
+                method: 'GET',
+                headers: {
+                    'Accept': 'application/json'
+                }
+            });
+            
+            if (response.ok) {
+                const health = await response.json();
+                console.log('🏥 Proxy Health Check:', health);
+                
+                if (health.status === 'healthy') {
+                    updateConnectionStatus('online');
+                    showNotification('✅ Proxy is healthy and connected to Google Apps Script', 'success');
+                    return health;
+                }
+            }
+        } catch (healthError) {
+            console.warn('⚠️ Health endpoint failed, testing main proxy...', healthError);
+        }
+        
+        // Fallback: Test main proxy functionality
+        const result = await callViaProxy('verify_system');
+        
+        updateConnectionStatus('online');
+        showNotification('✅ Proxy is working! (Health endpoint may be disabled)', 'success');
+        return { status: 'healthy', fallback: true };
+        
+    } catch (error) {
+        console.error('💥 Proxy health check failed:', error);
+        updateConnectionStatus('offline');
+        showNotification(`❌ Proxy connection failed: ${error.message}`, 'error');
+        return null;
+    }
+}
+
+/**
+ * Test connection - EXACT implementation from working single file
+ */
+export async function testConnection() {
+    try {
+        updateConnectionStatus('testing');
+        showNotification('Testing connection via proxy...', 'info');
+        
+        const result = await callViaProxy('verify_system');
+        
+        updateConnectionStatus('online');
+        showNotification('✅ Proxy connection successful! System is operational.', 'success');
+        return true;
+        
+    } catch (error) {
+        updateConnectionStatus('offline');
+        showNotification(`❌ Connection test failed: ${error.message}`, 'error');
+        return false;
+    }
+}
+
+/**
+ * Update connection status indicator - EXACT implementation from working single file
+ */
+function updateConnectionStatus(status) {
+    connectionStatus = status;
+    const statusEl = document.getElementById('connectionStatus');
+    
+    if (!statusEl) return;
+    
+    statusEl.className = `connection-status ${status}`;
+    
+    switch (status) {
+        case 'online':
+            statusEl.textContent = '🟢 Connected via Proxy';
+            statusEl.style.display = 'block';
+            setTimeout(() => statusEl.style.display = 'none', 3000);
+            break;
+        case 'offline':
+            statusEl.textContent = '🔴 Connection Failed';
+            statusEl.style.display = 'block';
+            break;
+        case 'testing':
+            statusEl.textContent = '🟡 Testing Connection...';
+            statusEl.style.display = 'block';
+            break;
+        default:
+            statusEl.style.display = 'none';
+    }
+}
+
+// ============================================================================
+// ENHANCED API FUNCTIONS - Keep your existing functionality
+// ============================================================================
+
+/**
+ * Enhanced API communication function with your existing features
+ */
+export async function callViaProxyAdvanced(action, data = {}, options = {}) {
     const {
         timeout = 10000,
         retries = 2,
@@ -32,11 +179,11 @@ export async function callViaProxy(action, data = {}, options = {}) {
         ...data
     };
     
-    console.log(`🌐 API Call: ${action}`, DEBUG.ENABLED ? requestData : { action });
+    console.log(`🌐 API Call (Advanced): ${action}`, DEBUG.ENABLED ? requestData : { action });
     
     for (let attempt = 1; attempt <= retries + 1; attempt++) {
         try {
-            const response = await fetchWithTimeout(API_CONFIG.PROXY_URL, {
+            const response = await fetchWithTimeout(PROXY_URL, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -51,12 +198,13 @@ export async function callViaProxy(action, data = {}, options = {}) {
             
             const result = await response.json();
             
-            console.log(`✅ API Success: ${action}`, DEBUG.ENABLED ? result : { success: result.success });
+            console.log(`✅ API Success (Advanced): ${action}`, DEBUG.ENABLED ? result : { success: result.success });
             
             if (showNotifications && result.success) {
                 showNotification(`${action} completed successfully`, 'success');
             }
             
+            updateConnectionStatus('online');
             return result;
             
         } catch (error) {
@@ -68,83 +216,20 @@ export async function callViaProxy(action, data = {}, options = {}) {
             }
             
             // All attempts failed
-            console.error(`💥 API Failed: ${action}`, error);
+            console.error(`💥 API Failed (Advanced): ${action}`, error);
             
             if (showNotifications) {
                 showNotification(`Failed to ${action.replace('_', ' ')}`, 'error');
             }
             
+            updateConnectionStatus('offline');
             throw error;
         }
     }
 }
 
-/**
- * Test proxy server health
- */
-export async function testProxyHealth() {
-    console.log('🏥 Testing proxy health...');
-    
-    try {
-        const response = await fetchWithTimeout(API_CONFIG.PROXY_HEALTH_URL, {
-            method: 'GET',
-            headers: {
-                'Accept': 'application/json'
-            }
-        }, 5000);
-        
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-        }
-        
-        const result = await response.json();
-        
-        console.log('✅ Proxy health check:', result);
-        showNotification('Proxy is healthy and responsive', 'success');
-        
-        return {
-            success: true,
-            healthy: true,
-            data: result
-        };
-        
-    } catch (error) {
-        console.error('❌ Proxy health check failed:', error);
-        showNotification('Proxy health check failed', 'error');
-        
-        return {
-            success: false,
-            healthy: false,
-            error: error.message
-        };
-    }
-}
-
-/**
- * Test connection to Google Apps Script
- */
-export async function testGoogleAppsScript() {
-    console.log('📊 Testing Google Apps Script connection...');
-    
-    try {
-        const result = await callViaProxy('verify_system', {}, {
-            timeout: 8000,
-            showNotifications: true
-        });
-        
-        return result;
-        
-    } catch (error) {
-        console.error('❌ Google Apps Script test failed:', error);
-        return {
-            success: false,
-            error: error.message
-        };
-    }
-}
-
 // ============================================================================
-// PRODUCT DATA API
+// PRODUCT DATA API - Updated to use working callViaProxy
 // ============================================================================
 
 /**
@@ -162,11 +247,8 @@ export async function fetchProductsFromSheets() {
             return { success: true, data: csvData, source: 'direct' };
         }
         
-        // Fallback to proxy
-        const result = await callViaProxy('get_products', {}, {
-            timeout: 15000,
-            retries: 1
-        });
+        // Fallback to proxy using working callViaProxy
+        const result = await callViaProxy('get_products');
         
         if (result.success && result.products) {
             console.log('✅ Products fetched via proxy');
@@ -184,11 +266,13 @@ export async function fetchProductsFromSheets() {
 }
 
 /**
- * Direct CSV fetch from Google Sheets
+ * Direct CSV fetch from Google Sheets - Enhanced
  */
 export async function fetchGoogleSheetsCSV() {
+    const GOOGLE_SHEETS_CSV_URL = 'https://docs.google.com/spreadsheets/d/14yjMXMc3AliGRemAPHU0GKPEBhW9h6Dzu6zv3kPC_fg/export?format=csv&gid=0';
+    
     try {
-        const response = await fetchWithTimeout(API_CONFIG.GOOGLE_SHEETS_CSV_URL, {
+        const response = await fetchWithTimeout(GOOGLE_SHEETS_CSV_URL, {
             method: 'GET',
             headers: {
                 'Accept': 'text/csv,text/plain,*/*'
@@ -220,10 +304,11 @@ export async function refreshProductCache() {
     console.log('🔄 Refreshing product cache...');
     
     try {
-        const result = await callViaProxy('refresh_products', {}, {
-            timeout: 20000,
-            showNotifications: true
-        });
+        const result = await callViaProxy('refresh_products');
+        
+        if (result.success) {
+            showNotification('Products refreshed successfully', 'success');
+        }
         
         return result;
         
@@ -235,25 +320,22 @@ export async function refreshProductCache() {
 }
 
 // ============================================================================
-// ORDER MANAGEMENT API
+// ORDER MANAGEMENT API - Updated to use working callViaProxy
 // ============================================================================
 
 /**
- * Submit order to backend
+ * Submit order to backend - CRITICAL for cross-device sync
  */
 export async function submitOrder(orderData) {
-    console.log(`📝 Submitting order #${orderData.id}...`);
+    console.log(`📝 Submitting order #${orderData.id} via working proxy...`);
     
     try {
-        const result = await callViaProxy('place_order', {
-            order: orderData
-        }, {
-            timeout: 15000,
-            retries: 2
-        });
+        // Use the working callViaProxy function
+        const result = await callViaProxy('place_order', { order: orderData });
         
         if (result.success) {
-            console.log(`✅ Order #${orderData.id} submitted successfully`);
+            console.log(`✅ Order #${orderData.id} submitted successfully - enables cross-device sync`);
+            showNotification('Order saved to server! Visible on all devices.', 'success');
         }
         
         return result;
@@ -265,19 +347,16 @@ export async function submitOrder(orderData) {
 }
 
 /**
- * Track order by ID and phone
+ * Track order by ID and phone - CRITICAL for cross-device tracking
  */
 export async function trackOrderById(orderId, phone) {
     console.log(`🔍 Tracking order ${orderId} for phone ${phone}...`);
     
     try {
+        // Use the working callViaProxy function
         const result = await callViaProxy('lookup_customer_order', {
             orderId,
-            phoneNumber: phone,
-            includeHistory: true
-        }, {
-            timeout: 10000,
-            retries: 1
+            phoneNumber: phone
         });
         
         return result;
@@ -289,21 +368,23 @@ export async function trackOrderById(orderId, phone) {
 }
 
 /**
- * Update order status (admin only)
+ * Update order status - CRITICAL for admin cross-device sync
  */
-export async function updateOrderStatus(orderId, newStatus, adminToken = null) {
+export async function updateOrderStatus(orderId, newStatus, paymentMethod = '', adminNotes = '') {
     console.log(`📋 Updating order ${orderId} status to: ${newStatus}`);
     
     try {
+        // Use the working callViaProxy function
         const result = await callViaProxy('update_order_status', {
             orderId,
             status: newStatus,
-            adminToken,
-            timestamp: new Date().toISOString()
-        }, {
-            timeout: 8000,
-            retries: 1
+            paymentMethod,
+            adminNotes
         });
+        
+        if (result.success) {
+            console.log(`✅ Order ${orderId} status updated via backend - synced across devices`);
+        }
         
         return result;
         
@@ -314,22 +395,23 @@ export async function updateOrderStatus(orderId, newStatus, adminToken = null) {
 }
 
 /**
- * Fetch all orders for admin dashboard
+ * Fetch all orders for admin dashboard - CRITICAL for cross-device admin
  */
-export async function fetchAllOrders(adminToken = null) {
+export async function fetchAllOrders() {
     console.log('📊 Fetching all orders for admin...');
     setOrdersLoadingState(true);
     
     try {
+        // Use the working callViaProxy function
         const result = await callViaProxy('get_orders', {
-            adminToken,
             limit: 100,
             status: 'all',
             sortBy: 'date'
-        }, {
-            timeout: 15000,
-            retries: 1
         });
+        
+        if (result.success) {
+            console.log(`✅ Fetched ${result.data?.orders?.length || 0} orders from backend`);
+        }
         
         return result;
         
@@ -342,50 +424,45 @@ export async function fetchAllOrders(adminToken = null) {
 }
 
 // ============================================================================
-// ADMIN API FUNCTIONS
+// ADMIN API FUNCTIONS - Updated to use working callViaProxy
 // ============================================================================
-
-/**
- * Admin login authentication
- */
-export async function authenticateAdmin(password) {
-    console.log('🔐 Authenticating admin...');
-    
-    try {
-        const result = await callViaProxy('admin_login', {
-            password,
-            requestToken: true
-        }, {
-            timeout: 5000,
-            retries: 0 // No retries for auth
-        });
-        
-        return result;
-        
-    } catch (error) {
-        console.error('💥 Admin authentication failed:', error);
-        return { success: false, error: error.message };
-    }
-}
 
 /**
  * Get admin dashboard statistics
  */
-export async function fetchAdminStats(adminToken = null) {
+export async function fetchAdminStats() {
     console.log('📈 Fetching admin statistics...');
     
     try {
-        const result = await callViaProxy('get_admin_stats', {
-            adminToken
-        }, {
-            timeout: 12000,
-            retries: 1
-        });
+        // Use the working callViaProxy function
+        const result = await callViaProxy('get_admin_stats');
         
         return result;
         
     } catch (error) {
         console.error('💥 Failed to fetch admin stats:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * Test Google Apps Script connection - Updated
+ */
+export async function testGoogleAppsScript() {
+    console.log('📊 Testing Google Apps Script connection...');
+    
+    try {
+        // Use the working callViaProxy function
+        const result = await callViaProxy('verify_system');
+        
+        if (result.success) {
+            showNotification('Google Apps Script connection successful', 'success');
+        }
+        
+        return result;
+        
+    } catch (error) {
+        console.error('❌ Google Apps Script test failed:', error);
         return { success: false, error: error.message };
     }
 }
@@ -406,9 +483,6 @@ export async function sendCustomerNotification(orderId, notificationType, custom
             type: notificationType,
             customMessage,
             source: 'admin_panel'
-        }, {
-            timeout: 10000,
-            retries: 1
         });
         
         if (result.success) {
@@ -522,10 +596,10 @@ export function startHealthMonitoring(intervalMs = 60000) {
             const health = await testProxyHealth();
             lastHealthCheck = {
                 timestamp: new Date(),
-                healthy: health.healthy
+                healthy: !!health
             };
             
-            if (!health.healthy) {
+            if (!health) {
                 console.warn('⚠️ Proxy health check failed during monitoring');
             }
         } catch (error) {
@@ -555,8 +629,98 @@ export function getLastHealthCheck() {
 }
 
 // ============================================================================
-// DEBUGGING HELPERS
+// DEBUGGING HELPERS - Enhanced
 // ============================================================================
+
+/**
+ * Debug backend storage - ENHANCED for cross-device testing
+ */
+export async function debugBackendStorage() {
+    console.log('🔧 DEBUG: Testing backend storage integration...');
+    
+    const tests = [
+        {
+            name: 'PHP Proxy Health',
+            test: () => testProxyHealth(),
+            critical: true
+        },
+        {
+            name: 'Google Apps Script Connection',
+            test: () => callViaProxy('verify_system'),
+            critical: true
+        },
+        {
+            name: 'Order Retrieval (Cross-Device Sync)',
+            test: () => callViaProxy('get_orders', { limit: 10 }),
+            critical: true
+        },
+        {
+            name: 'Order Tracking Test',
+            test: () => callViaProxy('lookup_customer_order', { orderId: 'GH1001', phoneNumber: '0201234567' }),
+            critical: false
+        },
+        {
+            name: 'Admin Stats Retrieval',
+            test: () => callViaProxy('get_admin_stats'),
+            critical: false
+        }
+    ];
+    
+    const results = {};
+    
+    for (const test of tests) {
+        try {
+            console.log(`🧪 Testing: ${test.name}...`);
+            const result = await test.test();
+            const working = result && result.success !== false;
+            
+            results[test.name] = { 
+                success: true, 
+                data: result,
+                working: working,
+                critical: test.critical
+            };
+            console.log(`${working ? '✅' : '❌'} ${test.name}: ${working ? 'Working' : 'Failed'}`);
+        } catch (error) {
+            results[test.name] = { 
+                success: false, 
+                error: error.message,
+                working: false,
+                critical: test.critical
+            };
+            console.error(`❌ ${test.name}: Failed - ${error.message}`);
+        }
+    }
+    
+    console.log('\n📊 BACKEND INTEGRATION SUMMARY:');
+    Object.entries(results).forEach(([name, result]) => {
+        const icon = result.working ? '✅' : (result.critical ? '🚨' : '⚠️');
+        console.log(`${icon} ${name}${result.critical ? ' (CRITICAL)' : ''}`);
+    });
+    
+    const criticalTests = Object.values(results).filter(r => r.critical);
+    const workingCritical = criticalTests.filter(r => r.working).length;
+    const totalTests = Object.keys(results).length;
+    const workingTotal = Object.values(results).filter(r => r.working).length;
+    
+    console.log(`\n📈 Backend Integration: ${workingTotal}/${totalTests} endpoints working (${workingCritical}/${criticalTests.length} critical)`);
+    
+    if (workingCritical === 0) {
+        console.log('\n🚨 CRITICAL ISSUE: No critical backend endpoints working');
+        console.log('💥 IMPACT: Orders only stored locally - NO cross-device sync');
+        console.log('💡 SOLUTION: Fix PHP proxy and Google Apps Script setup');
+    } else if (workingCritical < criticalTests.length) {
+        console.log('\n⚠️ PARTIAL: Some critical endpoints failing');
+        console.log('💥 IMPACT: Limited cross-device functionality');
+        console.log('💡 SOLUTION: Check failed critical endpoints');
+    } else {
+        console.log('\n🎉 SUCCESS: All critical endpoints working');
+        console.log('✅ RESULT: Full cross-device synchronization enabled');
+        console.log('🌐 FEATURE: Orders placed on any device will appear in admin panel');
+    }
+    
+    return results;
+}
 
 /**
  * Debug API connectivity
@@ -596,80 +760,19 @@ export async function debugApiConnectivity() {
     return results;
 }
 
-/**
- * Debug backend storage - call from console
- */
-export async function debugBackendStorage() {
-    console.log('🔧 DEBUG: Testing backend storage integration...');
-    
-    const tests = [
-        {
-            name: 'PHP Proxy Health',
-            test: () => testProxyHealth()
-        },
-        {
-            name: 'Google Apps Script Connection',
-            test: () => callViaProxy('verify_system', {})
-        },
-        {
-            name: 'Order Retrieval',
-            test: () => callViaProxy('get_orders', { adminToken: 'test', limit: 10 })
-        },
-        {
-            name: 'Order Tracking Test',
-            test: () => callViaProxy('lookup_customer_order', { orderId: 'GH1001', phoneNumber: '020111111' })
-        }
-    ];
-    
-    const results = {};
-    
-    for (const test of tests) {
-        try {
-            console.log(`🧪 Testing: ${test.name}...`);
-            const result = await test.test();
-            results[test.name] = { 
-                success: true, 
-                data: result,
-                working: result.success !== false
-            };
-            console.log(`${result.success !== false ? '✅' : '❌'} ${test.name}: ${result.success !== false ? 'Working' : 'Failed'}`);
-        } catch (error) {
-            results[test.name] = { 
-                success: false, 
-                error: error.message,
-                working: false
-            };
-            console.error(`❌ ${test.name}: Failed - ${error.message}`);
-        }
-    }
-    
-    console.log('\n📊 BACKEND INTEGRATION SUMMARY:');
-    Object.entries(results).forEach(([name, result]) => {
-        console.log(`${result.working ? '✅' : '❌'} ${name}`);
-    });
-    
-    const workingCount = Object.values(results).filter(r => r.working).length;
-    console.log(`\n📈 Backend Integration: ${workingCount}/${tests.length} endpoints working`);
-    
-    if (workingCount === 0) {
-        console.log('\n🚨 ISSUE: No backend endpoints working - orders only stored locally');
-        console.log('💡 SOLUTION: Set up Google Apps Script and PHP proxy');
-    } else if (workingCount < tests.length) {
-        console.log('\n⚠️ PARTIAL: Some backend endpoints working - check failed ones');
-    } else {
-        console.log('\n🎉 SUCCESS: All backend endpoints working - orders should sync across devices');
-    }
-    
-    return results;
-}
-
 // Make debug functions available globally
 window.debugApiConnectivity = debugApiConnectivity;
 window.debugBackendStorage = debugBackendStorage;
+window.testConnection = testConnection;
+window.testProxyHealth = testProxyHealth;
 
 // ============================================================================
 // INITIALIZATION
 // ============================================================================
+
+// Initialize API module
+console.log('🔌 API module initialized with cross-device sync support');
+console.log('📡 Proxy URL:', PROXY_URL);
 
 // Start health monitoring if enabled
 if (DEBUG.ENABLED) {
@@ -684,5 +787,9 @@ if (DEBUG.ENABLED) {
 export {
     fetchWithTimeout,
     handleApiError,
-    validateApiResponse
+    validateApiResponse,
+    updateConnectionStatus,
+    connectionStatus,
+    PROXY_URL,
+    PROXY_HEALTH_URL
 };
