@@ -267,7 +267,7 @@ export function createEnhancedCheckoutForm() {
                         <div style="font-size: 2rem; margin-bottom: 0.5rem;">🚚</div>
                         <strong>Delivery</strong>
                         <p style="margin: 0.5rem 0 0; font-size: 0.875rem; color: #6b7280;">
-                            Free delivery in Greater Accra for orders over GH₵200
+                            Free delivery in Greater Accra for orders over GH₵2000
                             ${total >= 200 ? '<br><span style="color: #16a34a; font-weight: bold;">✅ Free delivery qualified!</span>' : ''}
                         </p>
                     </div>
@@ -429,6 +429,41 @@ window.selectPickupTime = function(timeSlot) {
 // ORDER TRACKING - ENHANCED WITH PICKUP TIME DISPLAY
 // ============================================================================
 
+
+// ============================================================================
+// FIXED ORDER TRACKING - WITH PHONE NORMALIZATION
+// ============================================================================
+
+// ============================================================================
+// PHONE NUMBER NORMALIZATION - MATCHES BACKEND LOGIC
+// ============================================================================
+
+/**
+ * Normalize phone number for comparison (matches Google Apps Script logic)
+ */
+function normalizePhone(phone) {
+    if (!phone) return '';
+    
+    // Remove all non-digit characters
+    let normalized = phone.toString().replace(/\D/g, '');
+    
+    // Handle country code variations
+    if (normalized.startsWith('233')) {
+        normalized = '0' + normalized.substring(3);
+    }
+    
+    // Ensure it starts with 0 and is 10 digits
+    if (!normalized.startsWith('0') && normalized.length === 9) {
+        normalized = '0' + normalized;
+    }
+    
+    return normalized;
+}
+
+// ============================================================================
+// FIXED ORDER TRACKING - WITH PHONE NORMALIZATION
+// ============================================================================
+
 export async function trackOrder() {
     const trackingForm = document.getElementById('trackingForm');
     if (!trackingForm) return;
@@ -464,13 +499,21 @@ export async function trackOrder() {
             console.warn('⚠️ API tracking failed, checking local storage:', apiError);
         }
         
-        // PRIORITY 2: Fallback to local orders (device-specific)
+        // PRIORITY 2: Fallback to local orders with PHONE NORMALIZATION
         if (!order) {
             console.log('💾 Checking local storage for order...');
-            order = orders.find(o => 
-                o.id === orderId && 
-                o.customer.phone === phone
-            );
+            
+            // Normalize input phone number
+            const normalizedInputPhone = normalizePhone(phone);
+            console.log(`🔧 Normalized input phone: ${phone} → ${normalizedInputPhone}`);
+            
+            order = orders.find(o => {
+                const normalizedOrderPhone = normalizePhone(o.customer.phone);
+                console.log(`🔍 Comparing ${orderId}: ${normalizedOrderPhone} vs ${normalizedInputPhone}`);
+                
+                return o.id === orderId && normalizedOrderPhone === normalizedInputPhone;
+            });
+            
             if (order) {
                 console.log('✅ Order found in local storage (device-only)');
                 showNotification('⚠️ Order found locally (may not sync across devices)', 'warning');
@@ -483,6 +526,12 @@ export async function trackOrder() {
             showOrderNotFound();
             showNotification('Order not found. Please check your details.', 'error');
             console.log('❌ Order not found in API or local storage');
+            
+            // DEBUG: Show available orders for troubleshooting
+            console.log('🔍 Available orders in local storage:');
+            orders.forEach(o => {
+                console.log(`  - ${o.id}: ${o.customer.phone} (normalized: ${normalizePhone(o.customer.phone)})`);
+            });
         }
         
     } catch (error) {

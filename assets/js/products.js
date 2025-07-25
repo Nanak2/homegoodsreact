@@ -126,7 +126,8 @@ function parseCSVProducts(csvData) {
                     price: parseFloat(values[headers.indexOf('price')]) || 0,
                     category: values[headers.indexOf('category')] || 'general',
                     description: values[headers.indexOf('description')] || '',
-                    imageUrl: fixImageUrl(values[headers.indexOf('imageurl')]) || '',
+                   imageUrl: fixImageUrl(values[headers.indexOf('image_url')]) || '',
+
                     stock: parseInt(values[headers.indexOf('stock')]) || 0,
                     featured: values[headers.indexOf('featured')]?.toLowerCase() === 'true'
                 };
@@ -177,18 +178,24 @@ function parseCSVLine(line) {
 }
 
 function fixImageUrl(url) {
-    if (!url || typeof url !== 'string') return '';
-    
-    // Handle Google Drive URLs
-    if (url.includes('drive.google.com')) {
-        const fileIdMatch = url.match(/\/file\/d\/([a-zA-Z0-9-_]+)/);
-        if (fileIdMatch) {
-            return `https://drive.google.com/uc?id=${fileIdMatch[1]}`;
-        }
-    }
-    
-    return url;
+    if (!url || typeof url !== 'string') return 'https://via.placeholder.com/400x300?text=No+Image';
+
+    // Accept both full URLs and direct file IDs
+    const fullMatch = url.match(/https:\/\/drive\.google\.com\/file\/d\/([-a-zA-Z0-9_]+)/);
+    const idFromFullUrl = fullMatch?.[1];
+
+    const looseMatch = url.match(/[-\w]{25,}/)?.[0];
+
+    const fileId = idFromFullUrl || looseMatch;
+
+    return fileId 
+        ? `https://drive.google.com/thumbnail?id=${fileId}&sz=w800` 
+        : 'https://via.placeholder.com/400x300?text=No+Image';
 }
+
+
+
+
 
 // ============================================================================
 // PRODUCT DISPLAY
@@ -247,14 +254,15 @@ function filterProductList(productList, filter, search) {
 
 function createProductCard(product) {
     const isOutOfStock = product.stock <= 0;
-    
+    const imageUrl = product.imageUrl; // it's already fixed during parsing
+
     return `
         <div class="product-card bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow">
             <div class="relative">
-                <img src="${product.imageUrl || '/api/placeholder/400/300'}" 
+                <img src="${imageUrl}" 
                      alt="${product.name}" 
                      class="w-full h-48 object-cover"
-                     onerror="this.src='/api/placeholder/400/300'">
+                     onerror="this.src='https://via.placeholder.com/400x300?text=Image+Unavailable'">
                 ${product.featured ? '<div class="absolute top-2 left-2 bg-orange-500 text-white px-2 py-1 text-xs rounded">Featured</div>' : ''}
                 ${isOutOfStock ? '<div class="absolute top-2 right-2 bg-red-500 text-white px-2 py-1 text-xs rounded">Out of Stock</div>' : ''}
             </div>
@@ -274,6 +282,7 @@ function createProductCard(product) {
         </div>
     `;
 }
+
 
 function updateSearchResults(count) {
     const searchResults = document.getElementById('searchResults');
