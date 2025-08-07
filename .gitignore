@@ -1,0 +1,13 @@
+# Node
+node_modules/
+dist/
+build/
+.vite/
+.cache/
+.DS_Store
+
+# Logs
+*.log
+
+# Env
+.env
