@@ -1,3 +1,4 @@
+/* main.css */     
 * {
             margin: 0;
             padding: 0;
@@ -437,7 +438,7 @@
         .product-image {
             width: 100%;
             height: 220px;
-            background: linear-gradient(135deg, #f3f4f6 0%, #fed7aa 100%);
+            background-color: #fff;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -580,95 +581,68 @@
         .cart-modal {
             position: fixed;
             top: 0;
-            right: -400px;
-            width: 400px;
-            height: 100vh;
-            background: white;
-            box-shadow: -4px 0 20px rgba(0,0,0,0.15);
-            z-index: 1003;
-            transition: right 0.3s ease;
-            overflow-y: auto;
-        }
-        
-        .cart-modal.open {
             right: 0;
+            width: 100%;
+            max-width: 400px;
+            height: 100%;
+            background-color: #ffffff;
+            box-shadow: -4px 0 12px rgba(0,0,0,0.2);
+            z-index: 1000;
+            overflow-y: auto;
+            transform: translateX(0);
+            transition: transform 0.3s ease-in-out;
         }
-        
-        .cart-header {
-            padding: 2rem;
-            border-bottom: 1px solid #e5e7eb;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+
+        /* Tablet and up */
+        @media (min-width: 768px) {
+            .cart-modal {
+                width: 400px;
+            }
         }
-        
-        .cart-header h2 {
-            color: #000;
-            margin: 0;
+
+        /* Large screens */
+        @media (min-width: 1200px) {
+            .cart-modal {
+                width: 25%;
+                max-width: 450px;
+            }
         }
-        
-        .close-cart {
-            background: none;
-            border: none;
-            font-size: 1.5rem;
-            cursor: pointer;
-            color: #6b7280;
+
+        /* Mobile optimizations */
+        @media (max-width: 480px) {
+            .cart-modal {
+                width: 100%;
+                max-width: none;
+            }
+            
+            .cart-item {
+                padding: 0.5rem !important;
+                gap: 0.5rem !important;
+            }
+            
+            .cart-item img {
+                width: 50px !important;
+                height: 50px !important;
+            }
+            
+            .cart-header h2 {
+                font-size: 1.2rem !important;
+            }
         }
-        
-        .cart-content {
-            padding: 1rem 2rem;
+
+        /* Touch-friendly buttons */
+        .cart-button {
+            min-height: 44px;
+            min-width: 44px;
+            touch-action: manipulation;
         }
-        
-        .empty-cart {
-            text-align: center;
-            padding: 3rem 1rem;
-            color: #6b7280;
-        }
-        
-        .empty-cart-icon {
-            font-size: 4rem;
-            margin-bottom: 1rem;
-        }
-        
-        .cart-item {
-            display: flex;
-            gap: 1rem;
-            padding: 1rem 0;
-            border-bottom: 1px solid #f3f4f6;
-        }
-        
-        .cart-item-image {
-            width: 60px;
-            height: 60px;
-            background: #f3f4f6;
-            border-radius: 8px;
+
+        .cart-quantity-btn {
+            min-width: 36px;
+            min-height: 36px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.75rem;
-            color: #9ca3af;
-        }
-        
-        .cart-item-details {
-            flex: 1;
-        }
-        
-        .cart-item-name {
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-            font-size: 0.875rem;
-        }
-        
-        .cart-item-price {
-            color: #ea580c;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-        
-        .cart-item-controls {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
         }
         
         .qty-btn {
@@ -830,6 +804,17 @@
         
         .form-input.error {
             border-color: #dc2626;
+        }
+
+        .custom-input::placeholder {
+            color: #9ca3af; /* Light gray */
+            opacity: 0.7; /* Make it more transparent */
+            font-style: italic; /* Optional: make it italic */
+            font-size: 0.9em; /* Optional: slightly smaller */
+        }
+
+        .custom-input:focus::placeholder {
+            opacity: 0.5; /* Even more transparent when focused */
         }
         
         .error-message {
