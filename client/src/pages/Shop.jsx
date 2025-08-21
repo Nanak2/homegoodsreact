@@ -15,6 +15,7 @@ export default function Shop({ cartItems, setCartItems }) {
         const res = await fetch('http://localhost:5001/api/products');
         if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
         const data = await res.json();
+        //console.log("Response:", data);
         setProducts(data);
       } catch (err) {
         console.error('Fetch error:', err);
@@ -37,6 +38,8 @@ export default function Shop({ cartItems, setCartItems }) {
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
       const data = await res.json();
       setCategoryId(data.length > 0 ? data[0].id : null);
+      //console.log("Return data:", data.map(category => category.id));
+      //console.log("Return category ID:", data[0].id);
     } catch (err) {
       console.error('Fetch category error:', err);
     }
@@ -76,8 +79,8 @@ export default function Shop({ cartItems, setCartItems }) {
   if (error) return <div>Error: {error}</div>;
 
   return (
-    <div id="shop-page">
-      <h2 className="section-title">All Products</h2>
+    <div id="shop-page" className='shop-page'>
+      <h2 className="section-title" style={{ margin: '2.0rem' }}>All Products</h2>
 
       {/* Search Section */}
       <div className="search-section">
@@ -89,17 +92,17 @@ export default function Shop({ cartItems, setCartItems }) {
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
-        </div>
-        <div className="search-filters">
-          {['all', 'baby-care', 'food-beverages', 'cleaning-household', 'personal-care'].map(cat => (
-            <button
-              key={cat}
-              className={`filter-btn ${activeCategory === cat ? 'active' : ''}`}
-              onClick={() => handleCategoryClick(cat)}
-            >
-              {cat.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-            </button>
-          ))}
+          <div className="search-filters">
+            {['all', 'Baby Care', 'Food & Beverages', 'Cleaning & Household', 'Personal Care'].map(cat => (
+              <button
+                key={cat}
+                className={`filter-btn ${activeCategory === cat ? 'active' : ''}`}
+                onClick={() => handleCategoryClick(cat)}
+          >
+                {cat.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
+              </button>
+            ))}
+          </div>
         </div>
       </div>
 

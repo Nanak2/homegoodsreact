@@ -70,17 +70,6 @@ const CustomTextarea = ({
           {error}
         </small>
       )}
-      
-      <style jsx>{`
-        .custom-textarea::placeholder {
-          color: #9ca3af !important;
-          opacity: 0.6 !important;
-          font-style: italic !important;
-        }
-        .custom-textarea:focus::placeholder {
-          opacity: 0.3 !important;
-        }
-      `}</style>
     </div>
   );
 };

@@ -2,6 +2,8 @@ import express from 'express';
 import dotenv from 'dotenv';
 import cors from 'cors';
 import productsRoutes from './routes/products.js';
+import authRoutes from './routes/auth.js';
+import orderRoutes from './routes/order.js';
 
 dotenv.config();
 const app = express();
@@ -24,6 +26,8 @@ app.get('/test', (req, res) => {
 
 // Your existing routes
 app.use('/api/products', productsRoutes);
+app.use('/api/auth', authRoutes);
+app.use('/api/order', orderRoutes);
 
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => {

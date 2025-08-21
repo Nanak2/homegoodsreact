@@ -70,16 +70,6 @@ const CustomInput = ({
         </small>
       )}
       
-      <style jsx>{`
-        .custom-input::placeholder {
-          color: #9ca3af !important;
-          opacity: 0.6 !important;
-          font-style: italic !important;
-        }
-        .custom-input:focus::placeholder {
-          opacity: 0.3 !important;
-        }
-      `}</style>
     </div>
   );
 };

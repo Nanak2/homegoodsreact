@@ -34,45 +34,49 @@ export default function Cart({ cartItems = [], onClose, openCheckout, setCartIte
         id="cartModal"
         className="cart-modal"
         style={{
-        position: 'fixed',
-        top: 0,
-        right: 0,
-        width: '25%',
-        height: '100%',
-        backgroundColor: '#ffffff',
-        boxShadow: '-4px 0 12px rgba(0,0,0,0.2)',
-        zIndex: 1000,
-        overflowY: 'auto',
-        transform: 'translateX(0)',
-        transition: 'transform 0.3s ease-in-out',
+            position:  "absolute",
+            top: 0,
+            right: 0,
+            width: '25%',
+            maxWidth: "400px",
+            height: '100%',
+            backgroundColor: '#ffffff',
+            boxShadow: '-4px 0 12px rgba(0,0,0,0.2)',
+            zIndex: 1000,
+            overflowY: 'auto',
+            transform: 'translateX(0)',
+            transition: 'transform 0.3s ease-in-out',
         
         }}
     >
         {/* Cart Header */}
         <div 
-            className="d-flex justify-content-between align-items-center px-3 py-2 border-bottom"
+            className="cart-header border-bottom flex-wrap"
             style={{
-                backgroundColor: '#f8f9fa', // subtle gray background
+                backgroundColor: "#f8f9fa",
+                padding: "1.0rem",
+                position: "sticky",
+                top: 0,
+                zIndex: 10,
             }}
         >
-            <div className="d-flex align-items-center gap-2">
-                <i className="bi bi-cart3 fs-4" style={{ color: '#f97316' }}></i>
-                <h5 className="mb-0 fw-bold">Shopping Cart</h5>
-            </div>
-
             <button
                 onClick={onClose}
-                className="btn btn-light btn-sm rounded-circle d-flex align-items-center justify-content-center"
-                style={{
-                width: '32px',
-                height: '32px',
-                fontSize: '1.25rem',
-                lineHeight: '1',
-                }}
+                className="close-btn"
+                style={{ marginRight: '4px', padding: '0.1' }}
                 aria-label="Close cart"
             >
-                &times;
+                Close
             </button>
+            <div className="d-flex align-items-center justify-content-center gap-2" style={{ position: 'relative', top: '10px', }}>
+                <i className="bi bi-cart3 fs-4" style={{ color: '#f97316' }}></i>
+                <h5
+                    className="mb-0 fw-bold"
+                    style={{ fontSize: '2.0rem', }}
+                >
+                    Shopping Cart
+                </h5>
+            </div>
         </div>
 
         {/* Cart Content */}
@@ -134,51 +138,44 @@ export default function Cart({ cartItems = [], onClose, openCheckout, setCartIte
 
                         {/* Quantity Controls */}
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                            <button 
-                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                            disabled={item.quantity <= 1}
-                            style={{
-                                padding: '0.25rem 0.5rem',
-                                background: '#e5e7eb',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: item.quantity <= 1 ? 'not-allowed' : 'pointer'
-                            }}
+                            <button
+                                onClick={() =>
+                                item.quantity === 1
+                                    ? removeFromCart(item.id) // remove if quantity is 1
+                                    : updateQuantity(item.id, item.quantity - 1) // decrement otherwise
+                                }
+                                style={{
+                                    padding: '0.25rem 0.5rem',
+                                    background: '#e5e7eb',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: 'pointer',
+                                }}
                             >
-                            −
+                                {item.quantity === 1 ? (
+                                    <i className="bi bi-trash text-danger"></i> // trash icon
+                                ) : (
+                                    "−" // minus sign
+                                )}
                             </button>
+
                             <span>{item.quantity}</span>
-                            <button 
-                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                            disabled={item.quantity >= item.stock}
-                            style={{
-                                padding: '0.25rem 0.5rem',
-                                background: '#e5e7eb',
-                                border: 'none',
-                                borderRadius: '4px',
-                                cursor: item.quantity >= item.stock ? 'not-allowed' : 'pointer'
-                            }}
+
+                            <button
+                                onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                                disabled={item.quantity >= item.stock}
+                                style={{
+                                    padding: '0.25rem 0.5rem',
+                                    background: '#e5e7eb',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: item.quantity >= item.stock ? 'not-allowed' : 'pointer',
+                                }}
                             >
-                            +
+                                +
                             </button>
                         </div>
 
-                        {/* Remove */}
-                        <div
-                            className="d-flex justify-content-center align-items-center rounded"
-                            style={{
-                                backgroundColor: '#fff', // bg-danger
-                                width: '25px',
-                                height: '40px',
-                                cursor: 'pointer',
-                                transition: 'background-color 0.3s',
-                            }}
-                            onClick={() => removeFromCart(item.id)}
-                            onMouseOver={(e) => (e.currentTarget.style.backgroundColor = '#f8d7da')} // matches text-danger // bg-warning
-                            onMouseOut={(e) => (e.currentTarget.style.backgroundColor = '#fff')}  // bg-danger
-                        >
-                            <i className="bi bi-trash text-danger"></i>
-                        </div>
                     </div>
                     ))}
                 </div>
@@ -225,12 +222,12 @@ export default function Cart({ cartItems = [], onClose, openCheckout, setCartIte
                             }}
                             onClick={() => clearCart()}
                             onMouseOver={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f3f4f6';
-                            e.currentTarget.style.color = '#dc3545';
+                                e.currentTarget.style.backgroundColor = '#f3f4f6';
+                                e.currentTarget.style.color = '#dc3545';
                             }}
                             onMouseOut={(e) => {
-                            e.currentTarget.style.backgroundColor = '#f9fafb';
-                            e.currentTarget.style.color = '#9ca3af';
+                                e.currentTarget.style.backgroundColor = '#f9fafb';
+                                e.currentTarget.style.color = '#9ca3af';
                             }}
                         >
                             Clear Cart
