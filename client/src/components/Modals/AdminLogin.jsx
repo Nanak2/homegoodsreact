@@ -37,12 +37,12 @@ export default function AdminLogin({ onClose, onLoginSuccess }) {
     }
   };
 
-  const handleSignup = async (signupEmail, signupPassword) => {
+  const handleSignup = async () => {
     try {
       const response = await fetch("http://localhost:5001/api/auth/signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email: signupEmail, password: signupPassword }),
+        body: JSON.stringify({ email, password }),
       });
 
       const data = await response.json();

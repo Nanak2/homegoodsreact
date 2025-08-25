@@ -52,6 +52,7 @@ router.post("/signup", async (req, res) => {
   if (!email || !password ) return res.status(400).json({ message: "Missing fields" });
 
   console.log("Email:", email);
+  console.log("Password", password);
 
   try {
     // If user exists in auth.users, reject
