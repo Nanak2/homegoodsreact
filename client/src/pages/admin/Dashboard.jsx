@@ -1,5 +1,6 @@
-// Dashboard.jsx
+// client/src/pages/admin/Dashboard.jsx
 import React from "react";
+import { Link, useLocation } from "react-router-dom";
 import {
   LineChart,
   Line,
@@ -32,6 +33,18 @@ const data = [
 ];
 
 const Dashboard = () => {
+  const location = useLocation();
+
+  // Define navigation items with proper routes
+  const navigationItems = [
+    { icon: <BsCart />, label: "Orders", path: "/admin/orders" },
+    { icon: <BsBox />, label: "Products", path: "/admin/products" },
+    { icon: <BsPeople />, label: "Customers", path: "/admin/customers" },
+    { icon: <BsBarChart />, label: "Reports", path: "/admin/reports" },
+    { icon: <BsTags />, label: "Discounts", path: "/admin/discounts" },
+    { icon: <BsGear />, label: "Settings", path: "/admin/settings" }
+  ];
+
   return (
     <div className="container-fluid py-4">
       <div className="row">
@@ -68,7 +81,7 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <p className="mb-1 text-muted">Total Orders</p>
-                    <h5 className="mb-0">1,250</h5>
+                    <h5 className="mb-0">248</h5>
                   </div>
                 </div>
               </div>
@@ -76,20 +89,20 @@ const Dashboard = () => {
 
             {/* Total Revenue */}
             <div className="mb-3" style={{ maxWidth: "20%" }}>
-              <div className="card shadow-sm h-100 border-start border-success border-3">
+              <div className="card shadow-sm h-100">
                 <div className="card-body d-flex align-items-center">
                   <div className="me-3 p-3 bg-success bg-opacity-10 rounded">
                     <BsCurrencyDollar className="text-success" />
                   </div>
                   <div>
                     <p className="mb-1 text-muted">Total Revenue</p>
-                    <h5 className="mb-0">$34,567</h5>
+                    <h5 className="mb-0">GH₵45,820</h5>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Average Order */}
+            {/* Growth */}
             <div className="mb-3" style={{ maxWidth: "20%" }}>
               <div className="card shadow-sm h-100">
                 <div className="card-body d-flex align-items-center">
@@ -97,8 +110,8 @@ const Dashboard = () => {
                     <BsGraphUp className="text-info" />
                   </div>
                   <div>
-                    <p className="mb-1 text-muted">Average Order</p>
-                    <h5 className="mb-0">$82</h5>
+                    <p className="mb-1 text-muted">Growth</p>
+                    <h5 className="mb-0">+12.5%</h5>
                   </div>
                 </div>
               </div>
@@ -113,18 +126,18 @@ const Dashboard = () => {
                   </div>
                   <div>
                     <p className="mb-1 text-muted">Pending Orders</p>
-                    <h5 className="mb-0">57</h5>
+                    <h5 className="mb-0">12</h5>
                   </div>
                 </div>
               </div>
             </div>
 
-            {/* Pending Orders */}
+            {/* Confirmed Orders */}
             <div className="mb-3" style={{ maxWidth: "20%" }}>
               <div className="card shadow-sm h-100">
                 <div className="card-body d-flex align-items-center">
-                  <div className="me-3 p-3 bg-warning bg-opacity-10 rounded">
-                    <BsClock className="text-warning" />
+                  <div className="me-3 p-3 bg-success bg-opacity-10 rounded">
+                    <BsClock className="text-success" />
                   </div>
                   <div>
                     <p className="mb-1 text-muted">Confirmed Orders</p>
@@ -137,26 +150,28 @@ const Dashboard = () => {
 
           {/* Sidebar + Sales */}
           <div className="row" style={{ marginTop: '-45px'}}>
-            {/* Sidebar */}
+            {/* Navigation Sidebar */}
             <div className="mb-3" style={{ maxWidth: "20%" }}>
               <div className="bg-white p-3 border rounded shadow-sm h-100">
                 <h5 className="mb-4">Manage</h5>
                 <ul className="list-unstyled">
-                  {[
-                    { icon: <BsCart />, label: "Orders" },
-                    { icon: <BsBox />, label: "Products" },
-                    { icon: <BsPeople />, label: "Customers" },
-                    { icon: <BsBarChart />, label: "Reports" },
-                    { icon: <BsTags />, label: "Discounts" },
-                    { icon: <BsGear />, label: "Settings" }
-                  ].map((item, idx) => (
-                    <li
-                      key={idx}
-                      className="mb-3 d-flex align-items-center sidebar-item"
-                      style={{ cursor: "pointer" }}
-                    >
-                      <span className="me-2">{item.icon}</span>
-                      {item.label}
+                  {navigationItems.map((item, idx) => (
+                    <li key={idx} className="mb-3">
+                      <Link
+                        to={item.path}
+                        className={`d-flex align-items-center text-decoration-none sidebar-link ${
+                          location.pathname === item.path ? 'active' : ''
+                        }`}
+                        style={{ 
+                          cursor: "pointer",
+                          padding: "0.5rem",
+                          borderRadius: "0.375rem",
+                          transition: "all 0.2s ease-in-out"
+                        }}
+                      >
+                        <span className="me-3">{item.icon}</span>
+                        {item.label}
+                      </Link>
                     </li>
                   ))}
                 </ul>
@@ -184,18 +199,64 @@ const Dashboard = () => {
                 </ResponsiveContainer>
               </div>
             </div>
+
+            {/* Top Products */}
+            <div className="mb-3" style={{ maxWidth: "40%" }}>
+              <div className="card shadow-sm p-4 h-100">
+                <h5 className="mb-4">Revenue by Category</h5>
+                <div className="space-y-3">
+                  {[
+                    { category: "Kitchen & Dining", revenue: 12450, color: "#0d6efd", percentage: 35 },
+                    { category: "Home & Living", revenue: 8920, color: "#198754", percentage: 25 },
+                    { category: "Electronics", revenue: 6780, color: "#ffc107", percentage: 19 },
+                    { category: "Garden & Outdoor", revenue: 4230, color: "#dc3545", percentage: 12 },
+                    { category: "Personal Care", revenue: 3140, color: "#6f42c1", percentage: 9 }
+                  ].map((item, index) => (
+                    <div key={index} className="mb-3">
+                      <div className="d-flex justify-content-between align-items-center mb-1">
+                        <span className="fw-semibold small">{item.category}</span>
+                        <span className="small text-muted">GH₵{item.revenue.toLocaleString()}</span>
+                      </div>
+                      <div className="progress" style={{ height: "8px" }}>
+                        <div
+                          className="progress-bar"
+                          style={{ 
+                            width: `${item.percentage}%`, 
+                            backgroundColor: item.color 
+                          }}
+                        ></div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Hover styles for sidebar */}
+      {/* Enhanced Hover styles for sidebar */}
       <style>
         {`
-          .sidebar-item:hover {
-            color: #0d6efd;
-            font-weight: 500;
+          .sidebar-link {
+            color: #6c757d !important;
+          }
+          
+          .sidebar-link:hover {
+            color: #0d6efd !important;
+            background-color: #f8f9fa !important;
+            font-weight: 500 !important;
             transform: translateX(4px);
-            transition: all 0.2s ease-in-out;
+          }
+          
+          .sidebar-link.active {
+            color: #0d6efd !important;
+            background-color: #e7f1ff !important;
+            font-weight: 600 !important;
+          }
+          
+          .sidebar-link.active:hover {
+            transform: none;
           }
         `}
       </style>

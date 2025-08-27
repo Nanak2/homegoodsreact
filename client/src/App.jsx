@@ -17,6 +17,8 @@ import Products from "./pages/admin/Products";
 import Orders from "./pages/admin/Orders";
 import Customers from "./pages/admin/Customers";
 import Reports from "./pages/admin/Reports";
+import Discounts from "./pages/admin/Discounts";
+import Settings from "./pages/admin/Settings";
 
 const getScreenSize = () => {
   if (typeof window === "undefined") return "desktop";
@@ -103,6 +105,8 @@ export default function App() {
               <Route path="/admin/products" element={<Products />} />
               <Route path="/admin/customers" element={<Customers />} />
               <Route path="/admin/reports" element={<Reports />} />
+              <Route path="/admin/discounts" element={<Discounts />} />
+              <Route path="/admin/settings" element={<Settings />} />
             </Routes>
 
             <Footer />
